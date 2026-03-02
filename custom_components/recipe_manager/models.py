@@ -44,11 +44,14 @@ class Recipe:
     ingredients: List[Ingredient] = field(default_factory=list)
     instructions: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
+    courses: List[str] = field(default_factory=list)     # e.g. ["Dinner", "Main Course"]
+    categories: List[str] = field(default_factory=list)  # e.g. ["Italian", "Gluten Free"]
+    collections: List[str] = field(default_factory=list) # e.g. ["30 Minutes", "Summer"]
     source_url: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
     cuisine: Optional[str] = None
-    category: Optional[str] = None   # e.g. "main", "side", "dessert"
+    category: Optional[str] = None   # legacy single-category (kept for compat)
     prep_time: Optional[int] = None   # minutes
     cook_time: Optional[int] = None   # minutes
     total_time: Optional[int] = None  # minutes
@@ -78,6 +81,9 @@ class Recipe:
             ingredients=ingredients,
             instructions=data.get("instructions", []),
             tags=data.get("tags", []),
+            courses=data.get("courses", []),
+            categories=data.get("categories", []),
+            collections=data.get("collections", []),
             source_url=data.get("source_url"),
             description=data.get("description"),
             image_url=data.get("image_url"),

@@ -194,23 +194,48 @@ def _parse_recipe_container(
 
     # --- Ingredients ---
     ingredients: List[Dict[str, Any]] = []
-    ing_el = container.find(class_=re.compile(r"recipe-ingredients?", re.I))
+    ing_el = container.find(
+        class_=re.compile(
+            r"recipe-ingredients?|p-ingredients?|ingredient-list|ingredients-list", re.I
+        )
+    )
     if ing_el:
-        for li in ing_el.find_all("li"):
-            txt = li.get_text(" ", strip=True)
-            if txt:
-                ingredients.append(_parse_ingredient_line(txt))
+        items = ing_el.find_all("li") or ing_el.find_all("p") or ing_el.find_all("span")
+        if items:
+            for item in items:
+                txt = item.get_text(" ", strip=True)
+                if txt:
+                    ingredients.append(_parse_ingredient_line(txt))
+        else:
+            # Fall back to splitting the whole text block by newlines
+            for line in ing_el.get_text("\n", strip=True).split("\n"):
+                line = line.strip()
+                if line:
+                    ingredients.append(_parse_ingredient_line(line))
 
-    # --- Instructions ---
+    # --- Instructions / Directions ---
     instructions: List[str] = []
     method_el = container.find(
-        class_=re.compile(r"recipe-(method|directions?|instructions?)", re.I)
+        class_=re.compile(
+            r"recipe-(method|directions?|instructions?|steps?)"
+            r"|e-instructions?|directions?-list|steps?-list",
+            re.I,
+        )
     )
     if method_el:
-        for li in method_el.find_all("li"):
-            txt = li.get_text(" ", strip=True)
-            if txt:
-                instructions.append(txt)
+        items = method_el.find_all("li") or method_el.find_all("p")
+        if items:
+            for item in items:
+                txt = item.get_text(" ", strip=True)
+                # Strip leading numbering like "1." or "Step 1:"
+                txt = re.sub(r"^(?:Step\s*)?\d+[.):\s]+", "", txt, flags=re.I).strip()
+                if txt:
+                    instructions.append(txt)
+        else:
+            for line in method_el.get_text("\n", strip=True).split("\n"):
+                line = re.sub(r"^(?:Step\s*)?\d+[.):\s]+", "", line.strip(), flags=re.I).strip()
+                if line:
+                    instructions.append(line)
 
     # --- Nutrition (best-effort) ---
     nutrition: Optional[Dict[str, str]] = None
