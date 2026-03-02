@@ -333,23 +333,20 @@ async def websocket_clear_meal_plan(hass, connection, msg):
 
 @websocket_api.websocket_command({
     vol.Required("type"): f"{DOMAIN}/import/recipe_keeper",
-    vol.Required("file_content"): str,   # base64-encoded .rkeeper bytes
-    vol.Optional("download_images", default=True): bool,
+    vol.Required("html_content"): str,
 })
 @websocket_api.async_response
 async def websocket_import_recipe_keeper(hass, connection, msg):
-    """Import recipes from a base64-encoded .rkeeper archive."""
-    import base64
-    from ..importer import parse_recipe_keeper_bytes
+    """Import recipes from Recipe Keeper HTML content.
+
+    The frontend parses the ZIP with JSZip and sends only the HTML text here.
+    Images are uploaded separately via recipe_manager/recipes/upload_image so
+    that large photo sets don't exceed the WebSocket message size limit.
+    """
+    from ..importer import parse_recipe_keeper_html
 
     try:
-        raw = base64.b64decode(msg["file_content"])
-    except Exception as exc:
-        connection.send_error(msg["id"], "invalid_file", f"Could not decode file: {exc}")
-        return
-
-    try:
-        recipes, _images = parse_recipe_keeper_bytes(raw)
+        recipes = parse_recipe_keeper_html(msg["html_content"])
     except ValueError as exc:
         connection.send_error(msg["id"], "parse_failed", str(exc))
         return
@@ -357,24 +354,61 @@ async def websocket_import_recipe_keeper(hass, connection, msg):
     storage = get_storage(hass)
     imported = 0
     failed = 0
-    download_images = msg.get("download_images", True)
+    recipe_images: list = []
 
     for recipe_data in recipes:
         try:
-            image_bytes = recipe_data.pop("_image_bytes", None)
+            image_filename = recipe_data.pop("_image_filename", None)
+            recipe_data.pop("_image_bytes", None)  # not used in this path
 
             recipe = await storage.add_recipe(recipe_data)
-
-            if download_images and image_bytes:
-                local_url = await storage.save_image_from_bytes(image_bytes, recipe.id)
-                if local_url:
-                    await storage.update_recipe(recipe.id, {"image_url": local_url})
-
             hass.bus.async_fire(EVENT_RECIPE_ADDED, {"recipe_id": recipe.id})
+
+            if image_filename:
+                recipe_images.append({
+                    "recipe_id": recipe.id,
+                    "image_filename": image_filename,
+                })
+
             imported += 1
         except Exception as exc:  # noqa: BLE001
             _LOGGER.warning("Failed to import recipe '%s': %s", recipe_data.get("name"), exc)
             failed += 1
 
     _LOGGER.info("Recipe Keeper import: %d imported, %d failed", imported, failed)
-    connection.send_result(msg["id"], {"imported": imported, "failed": failed})
+    connection.send_result(msg["id"], {
+        "imported": imported,
+        "failed": failed,
+        "recipe_images": recipe_images,
+    })
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): f"{DOMAIN}/recipes/upload_image",
+    vol.Required("recipe_id"): str,
+    vol.Required("image_data"): str,  # base64-encoded image bytes
+})
+@websocket_api.async_response
+async def websocket_upload_recipe_image(hass, connection, msg):
+    """Save a base64-encoded image for a recipe and update its image_url."""
+    import base64
+
+    storage = get_storage(hass)
+    recipe = storage.get_recipe(msg["recipe_id"])
+    if not recipe:
+        connection.send_error(msg["id"], "not_found", "Recipe not found")
+        return
+
+    try:
+        raw = base64.b64decode(msg["image_data"])
+    except Exception as exc:
+        connection.send_error(msg["id"], "invalid_data", f"Could not decode image: {exc}")
+        return
+
+    local_url = await storage.save_image_from_bytes(raw, msg["recipe_id"])
+    if not local_url:
+        connection.send_error(msg["id"], "save_failed", "Could not save image file")
+        return
+
+    await storage.update_recipe(msg["recipe_id"], {"image_url": local_url})
+    connection.send_result(msg["id"], {"image_url": local_url})

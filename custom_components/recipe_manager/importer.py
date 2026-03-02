@@ -18,6 +18,59 @@ _LOGGER = logging.getLogger(__name__)
 # Public entry point
 # ---------------------------------------------------------------------------
 
+def parse_recipe_keeper_html(
+    html_content: str,
+    images: Optional[Dict[str, bytes]] = None,
+) -> List[Dict[str, Any]]:
+    """Parse Recipe Keeper HTML and return a list of recipe dicts.
+
+    html_content — the HTML text from recipebook.html (or equivalent)
+    images       — optional map of filename → raw bytes for embedding photos.
+                   When omitted, recipes include ``_image_filename`` (the src
+                   reference from the HTML) so the caller can supply images
+                   separately (e.g. uploaded one-by-one from the browser).
+    """
+    if images is None:
+        images = {}
+
+    try:
+        from bs4 import BeautifulSoup  # type: ignore[import]
+    except ImportError as exc:
+        raise ValueError(
+            "BeautifulSoup4 is required for Recipe Keeper import"
+        ) from exc
+
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    containers = soup.find_all(class_="recipe-details")
+    if not containers:
+        containers = [
+            el for el in soup.find_all(["article", "section", "div"])
+            if el.find(class_=re.compile(r"recipe-name", re.I))
+        ]
+
+    if not containers:
+        raise ValueError(
+            "No recipe containers found — check this is a valid Recipe Keeper export"
+        )
+
+    recipes: List[Dict[str, Any]] = []
+    for container in containers:
+        try:
+            recipe = _parse_recipe_container(container, images)
+            if recipe and recipe.get("name"):
+                recipes.append(recipe)
+        except Exception as exc:  # noqa: BLE001
+            _LOGGER.debug("Skipping unparseable recipe container: %s", exc)
+
+    _LOGGER.info(
+        "Parsed %d recipes from Recipe Keeper HTML (%d images available)",
+        len(recipes),
+        len(images),
+    )
+    return recipes
+
+
 def parse_recipe_keeper_bytes(
     data: bytes,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, bytes]]:
@@ -32,7 +85,6 @@ def parse_recipe_keeper_bytes(
         raise ValueError("Not a valid .rkeeper archive (bad ZIP)") from exc
 
     with zf:
-        # Find the HTML file (usually recipebook.html)
         html_file = next(
             (n for n in zf.namelist() if n.endswith(".html")), None
         )
@@ -41,7 +93,6 @@ def parse_recipe_keeper_bytes(
 
         html_content = zf.read(html_file).decode("utf-8", errors="replace")
 
-        # Collect all image files
         image_extensions = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
         images: Dict[str, bytes] = {
             n: zf.read(n)
@@ -49,39 +100,7 @@ def parse_recipe_keeper_bytes(
             if any(n.lower().endswith(ext) for ext in image_extensions)
         }
 
-    try:
-        from bs4 import BeautifulSoup  # type: ignore[import]
-    except ImportError as exc:
-        raise ValueError(
-            "BeautifulSoup4 is required for Recipe Keeper import "
-            "(it should be installed with recipe-scrapers)"
-        ) from exc
-
-    soup = BeautifulSoup(html_content, "html.parser")
-
-    # Recipe Keeper wraps each recipe in <div class="recipe-details">
-    containers = soup.find_all(class_="recipe-details")
-    if not containers:
-        # Broader fallback — look for any article or section with a recipe name
-        containers = [
-            el for el in soup.find_all(["article", "section", "div"])
-            if el.find(class_=re.compile(r"recipe-name", re.I))
-        ]
-
-    recipes: List[Dict[str, Any]] = []
-    for container in containers:
-        try:
-            recipe = _parse_recipe_container(container, images)
-            if recipe and recipe.get("name"):
-                recipes.append(recipe)
-        except Exception as exc:  # noqa: BLE001
-            _LOGGER.debug("Skipping unparseable recipe container: %s", exc)
-
-    _LOGGER.info(
-        "Parsed %d recipes from Recipe Keeper archive (%d images available)",
-        len(recipes),
-        len(images),
-    )
+    recipes = parse_recipe_keeper_html(html_content, images)
     return recipes, images
 
 
@@ -224,8 +243,10 @@ def _parse_recipe_container(
         "ingredients": ingredients,
         "instructions": instructions,
         "nutrition": nutrition,
-        # Passed through to the WS handler for image saving; not stored directly
+        # _image_bytes: raw bytes when images dict was provided (parse_recipe_keeper_bytes)
         "_image_bytes": image_bytes,
+        # _image_filename: src reference in HTML (used for two-phase browser upload)
+        "_image_filename": image_src,
     }
 
 
