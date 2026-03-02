@@ -75,7 +75,7 @@ class RecipeStorage:
         now = current_timestamp()
         recipe = Recipe(
             id=recipe_id,
-            title=data["title"],
+            name=data.get("name") or data.get("title", ""),
             ingredients=[Ingredient.from_dict(i) for i in data.get("ingredients", [])],
             instructions=data.get("instructions", []),
             tags=data.get("tags", []),
@@ -90,7 +90,7 @@ class RecipeStorage:
             servings=data.get("servings"),
             servings_text=data.get("servings_text"),
             nutrition=data.get("nutrition"),
-            favourite=data.get("favourite", False),
+            is_favourite=data.get("is_favourite", False),
             rating=data.get("rating"),
             notes=data.get("notes"),
             created_at=now,
@@ -107,9 +107,9 @@ class RecipeStorage:
             return None
 
         updatable = [
-            "title", "source_url", "description", "image_url", "cuisine", "category",
+            "name", "source_url", "description", "image_url", "cuisine", "category",
             "prep_time", "cook_time", "total_time", "servings", "servings_text",
-            "nutrition", "favourite", "rating", "notes", "tags",
+            "nutrition", "is_favourite", "rating", "notes", "tags",
         ]
         for key in updatable:
             if key in data:
@@ -143,7 +143,7 @@ class RecipeStorage:
         recipe = self._recipes.get(recipe_id)
         if not recipe:
             return None
-        recipe.favourite = not recipe.favourite
+        recipe.is_favourite = not recipe.is_favourite
         recipe.updated_at = current_timestamp()
         await self._save_recipes()
         return recipe

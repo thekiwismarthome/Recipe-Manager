@@ -40,7 +40,7 @@ class Ingredient:
 class Recipe:
     """A recipe record."""
     id: str
-    title: str
+    name: str
     ingredients: List[Ingredient] = field(default_factory=list)
     instructions: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
@@ -55,7 +55,7 @@ class Recipe:
     servings: Optional[int] = None
     servings_text: Optional[str] = None
     nutrition: Optional[Dict[str, Any]] = None
-    favourite: bool = False
+    is_favourite: bool = False
     rating: Optional[int] = None      # 1-5
     notes: Optional[str] = None
     created_at: str = field(default_factory=current_timestamp)
@@ -73,7 +73,8 @@ class Recipe:
         ]
         return cls(
             id=data["id"],
-            title=data["title"],
+            # Support old storage that used "title"
+            name=data.get("name") or data.get("title", ""),
             ingredients=ingredients,
             instructions=data.get("instructions", []),
             tags=data.get("tags", []),
@@ -88,7 +89,8 @@ class Recipe:
             servings=data.get("servings"),
             servings_text=data.get("servings_text"),
             nutrition=data.get("nutrition"),
-            favourite=data.get("favourite", False),
+            # Support old storage that used "favourite"
+            is_favourite=data.get("is_favourite") or data.get("favourite", False),
             rating=data.get("rating"),
             notes=data.get("notes"),
             created_at=data.get("created_at", current_timestamp()),

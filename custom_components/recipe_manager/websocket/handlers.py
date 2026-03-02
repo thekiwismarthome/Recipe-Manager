@@ -104,7 +104,7 @@ async def websocket_scrape_recipe(hass, connection, msg):
 
 @websocket_api.websocket_command({
     vol.Required("type"): f"{DOMAIN}/recipes/add",
-    vol.Required("title"): str,
+    vol.Required("name"): str,
     vol.Optional("ingredients"): list,
     vol.Optional("instructions"): list,
     vol.Optional("tags"): list,
@@ -120,7 +120,7 @@ async def websocket_scrape_recipe(hass, connection, msg):
     vol.Optional("servings_text"): str,
     vol.Optional("nutrition"): dict,
     vol.Optional("notes"): str,
-    vol.Optional("favourite"): bool,
+    vol.Optional("is_favourite"): bool,
     vol.Optional("download_image"): bool,
 })
 @websocket_api.async_response
@@ -132,7 +132,7 @@ async def websocket_add_recipe(hass, connection, msg):
     # Optionally download and localise the image
     if msg.get("download_image") and data.get("image_url"):
         local_url = await storage.download_and_save_image(
-            data["image_url"], "tmp_" + data["title"][:20].replace(" ", "_")
+            data["image_url"], "tmp_" + data["name"][:20].replace(" ", "_")
         )
         if local_url:
             data["image_url"] = local_url
@@ -155,7 +155,7 @@ async def websocket_add_recipe(hass, connection, msg):
 @websocket_api.websocket_command({
     vol.Required("type"): f"{DOMAIN}/recipes/update",
     vol.Required("recipe_id"): str,
-    vol.Optional("title"): str,
+    vol.Optional("name"): str,
     vol.Optional("ingredients"): list,
     vol.Optional("instructions"): list,
     vol.Optional("tags"): list,
@@ -171,7 +171,7 @@ async def websocket_add_recipe(hass, connection, msg):
     vol.Optional("servings_text"): str,
     vol.Optional("nutrition"): dict,
     vol.Optional("notes"): str,
-    vol.Optional("favourite"): bool,
+    vol.Optional("is_favourite"): bool,
     vol.Optional("rating"): int,
 })
 @websocket_api.async_response
@@ -266,7 +266,7 @@ def websocket_get_meal_plan(hass, connection, msg):
         d = entry.to_dict()
         recipe = storage.get_recipe(entry.recipe_id)
         if recipe:
-            d["recipe_title"] = recipe.title
+            d["recipe_name"] = recipe.name
             d["recipe_image"] = recipe.image_url
         result.append(d)
     connection.send_result(msg["id"], {"entries": result})

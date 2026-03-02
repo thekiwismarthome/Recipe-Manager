@@ -42,16 +42,20 @@ async def async_scrape_recipe(hass: HomeAssistant, url: str) -> Dict[str, Any]:
     except Exception as exc:
         raise ValueError(f"Failed to fetch URL: {exc}") from exc
 
-    # Try recipe-scrapers first (supports 1000+ sites)
+    # Try recipe-scrapers with wild_mode=True (handles 1000+ known sites *and*
+    # uses its own JSON-LD / microdata fallback for unknown sites).
     try:
         from recipe_scrapers import scrape_html  # type: ignore[import]
 
-        scraper = scrape_html(html, org_url=url)
-        return _extract_from_scraper(scraper, url)
-    except Exception:
-        pass
+        scraper = scrape_html(html, org_url=url, wild_mode=True)
+        result = _extract_from_scraper(scraper, url)
+        if result.get("name"):
+            return result
+        _LOGGER.debug("recipe-scrapers returned no title for %s, trying JSON-LD fallback", url)
+    except Exception as exc:
+        _LOGGER.debug("recipe-scrapers failed for %s: %s", url, exc)
 
-    # Fallback: parse JSON-LD schema.org/Recipe blocks
+    # Last resort: our own JSON-LD parser
     try:
         return _extract_from_jsonld(html, url)
     except Exception as exc:
@@ -73,17 +77,20 @@ def _extract_from_scraper(scraper: Any, url: str) -> Dict[str, Any]:
         except Exception:
             return None
 
-    title = _safe(scraper.title) or ""
-    if not title:
+    name = _safe(scraper.title) or ""
+    if not name:
         raise ValueError("No recipe title found")
 
     # Ingredients: recipe-scrapers returns a list of strings
     raw_ingredients: List[str] = _safe(scraper.ingredients) or []
     ingredients = [_parse_ingredient_string(s) for s in raw_ingredients]
 
-    # Instructions: may be a single string or list
-    raw_instructions = _safe(scraper.instructions) or ""
-    instructions = _split_instructions(raw_instructions)
+    # Instructions: use instructions_list() for a proper list of steps
+    instructions: List[str] = _safe(scraper.instructions_list) or []
+    if not instructions:
+        # Fallback: split the combined instructions string
+        raw_instructions = _safe(scraper.instructions) or ""
+        instructions = _split_instructions(raw_instructions)
 
     # Times are in minutes
     prep_time = _safe(scraper.prep_time)
@@ -95,8 +102,9 @@ def _extract_from_scraper(scraper: Any, url: str) -> Dict[str, Any]:
 
     image_url = _safe(scraper.image)
     description = _safe(scraper.description)
-    cuisine = _safe(scraper.cuisine)
-    category = _safe(scraper.category)
+    # cuisine and category may return a list on some sites
+    cuisine = _first_or_str(_safe(scraper.cuisine))
+    category = _first_or_str(_safe(scraper.category))
 
     nutrition_raw = _safe(scraper.nutrients)
     nutrition = _normalise_nutrition(nutrition_raw) if nutrition_raw else None
@@ -109,12 +117,12 @@ def _extract_from_scraper(scraper: Any, url: str) -> Dict[str, Any]:
             tags.extend(kw)
         elif isinstance(kw, str):
             tags.extend([t.strip() for t in kw.split(",") if t.strip()])
-    if category and isinstance(category, str):
+    if category:
         tags.append(category.strip())
     tags = list(dict.fromkeys(t.lower() for t in tags if t))
 
     return {
-        "title": title.strip(),
+        "name": name.strip(),
         "source_url": url,
         "description": description,
         "image_url": image_url,
@@ -171,8 +179,8 @@ def _extract_from_jsonld(html: str, url: str) -> Dict[str, Any]:
 def _extract_from_jsonld_node(node: Dict[str, Any], url: str) -> Dict[str, Any]:
     """Convert a JSON-LD Recipe node to our internal dict."""
 
-    title = node.get("name", "").strip()
-    if not title:
+    name = node.get("name", "").strip()
+    if not name:
         raise ValueError("No title in JSON-LD Recipe")
 
     # Ingredients
@@ -228,7 +236,7 @@ def _extract_from_jsonld_node(node: Dict[str, Any], url: str) -> Dict[str, Any]:
     nutrition = _normalise_nutrition(nutrition_node) if nutrition_node else None
 
     return {
-        "title": title,
+        "name": name,
         "source_url": url,
         "description": description,
         "image_url": image_url,
