@@ -93,5 +93,20 @@ async def _register_websocket_handlers(hass: HomeAssistant) -> None:
 
 
 async def _register_frontend(hass: HomeAssistant) -> None:
-    """Frontend resources are provided by the separate Recipe Manager Card HACS plugin."""
-    _LOGGER.debug("Frontend resources skipped (separate HACS module)")
+    """Serve the bundled card JS and register it as a Lovelace resource.
+
+    This covers direct (non-HACS) installs and local development.
+    When the card is also installed via HACS the duplicate registration is
+    harmless — browsers deduplicate ES module loads by URL.
+    """
+    import pathlib
+    from homeassistant.components.frontend import add_extra_js_url
+
+    www_dir = pathlib.Path(__file__).parent / "www"
+    url_base = f"/{DOMAIN}/static"
+
+    hass.http.register_static_path(url_base, str(www_dir), cache_headers=False)
+
+    card_url = f"{url_base}/recipe-manager-card.js"
+    add_extra_js_url(hass, card_url)
+    _LOGGER.debug("Registered frontend resource: %s", card_url)
