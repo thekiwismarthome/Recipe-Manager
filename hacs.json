@@ -1,4 +1,7 @@
 {
   "name": "Recipe Manager",
-  "render_readme": true
+  "content_in_root": false,
+  "render_readme": true,
+  "domains": ["recipe_manager"],
+  "homeassistant": "2024.8.0"
 }

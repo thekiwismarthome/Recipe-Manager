@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-import os
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -91,22 +90,5 @@ async def _register_websocket_handlers(hass: HomeAssistant) -> None:
 
 
 async def _register_frontend(hass: HomeAssistant) -> None:
-    """Register the Lovelace card JS resource."""
-    try:
-        from homeassistant.components.frontend import async_register_built_in_panel
-        from homeassistant.components.http import StaticPathConfig
-
-        component_dir = os.path.dirname(__file__)
-        www_dir = os.path.join(component_dir, "www")
-
-        if os.path.isdir(www_dir):
-            await hass.http.async_register_static_paths([
-                StaticPathConfig(
-                    "/recipe_manager_static",
-                    www_dir,
-                    cache_headers=False,
-                )
-            ])
-            _LOGGER.info("Registered Recipe Manager static files at /recipe_manager_static")
-    except Exception as exc:
-        _LOGGER.warning("Could not register frontend resources: %s", exc)
+    """Frontend resources are provided by the separate Recipe Manager Card HACS plugin."""
+    _LOGGER.debug("Frontend resources skipped (separate HACS module)")
