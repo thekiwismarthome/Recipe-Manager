@@ -258,6 +258,31 @@ class RecipeStorage:
             _LOGGER.warning("Failed to convert recipe image: %s", exc)
             return None
 
+    async def save_image_from_bytes(self, raw: bytes, recipe_id: str) -> Optional[str]:
+        """Convert raw image bytes to WebP and save locally, return local URL."""
+        from PIL import Image
+
+        safe_id = re.sub(r"[^a-z0-9_-]", "", recipe_id.lower())
+        filename = f"recipe_{safe_id}.webp"
+        dest = self._images_dir / filename
+
+        try:
+            img = Image.open(io.BytesIO(raw))
+            if img.mode == "RGBA":
+                bg = Image.new("RGB", img.size, (255, 255, 255))
+                bg.paste(img, mask=img.split()[3])
+                img = bg
+            elif img.mode != "RGB":
+                img = img.convert("RGB")
+            img.thumbnail((IMAGE_SIZE, IMAGE_SIZE), Image.LANCZOS)
+            out = io.BytesIO()
+            img.save(out, format="WEBP", quality=IMAGE_QUALITY)
+            dest.write_bytes(out.getvalue())
+            return f"/local/recipe_manager/images/{filename}"
+        except Exception as exc:
+            _LOGGER.warning("Failed to save image from bytes for %s: %s", recipe_id, exc)
+            return None
+
     # ------------------------------------------------------------------
     # Private save helpers
     # ------------------------------------------------------------------

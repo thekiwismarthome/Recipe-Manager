@@ -84,6 +84,8 @@ async def _register_websocket_handlers(hass: HomeAssistant) -> None:
         h.websocket_add_meal_plan,
         h.websocket_remove_meal_plan,
         h.websocket_clear_meal_plan,
+        # Import
+        h.websocket_import_recipe_keeper,
     ]
     for cmd in cmds:
         websocket_api.async_register_command(hass, cmd)

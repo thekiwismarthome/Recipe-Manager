@@ -325,3 +325,56 @@ async def websocket_clear_meal_plan(hass, connection, msg):
     count = await storage.clear_meal_plan_week(msg["week_start"])
     hass.bus.async_fire(EVENT_MEAL_PLAN_UPDATED, {})
     connection.send_result(msg["id"], {"cleared": count})
+
+
+# ===========================================================================
+# Import
+# ===========================================================================
+
+@websocket_api.websocket_command({
+    vol.Required("type"): f"{DOMAIN}/import/recipe_keeper",
+    vol.Required("file_content"): str,   # base64-encoded .rkeeper bytes
+    vol.Optional("download_images", default=True): bool,
+})
+@websocket_api.async_response
+async def websocket_import_recipe_keeper(hass, connection, msg):
+    """Import recipes from a base64-encoded .rkeeper archive."""
+    import base64
+    from ..importer import parse_recipe_keeper_bytes
+
+    try:
+        raw = base64.b64decode(msg["file_content"])
+    except Exception as exc:
+        connection.send_error(msg["id"], "invalid_file", f"Could not decode file: {exc}")
+        return
+
+    try:
+        recipes, _images = parse_recipe_keeper_bytes(raw)
+    except ValueError as exc:
+        connection.send_error(msg["id"], "parse_failed", str(exc))
+        return
+
+    storage = get_storage(hass)
+    imported = 0
+    failed = 0
+    download_images = msg.get("download_images", True)
+
+    for recipe_data in recipes:
+        try:
+            image_bytes = recipe_data.pop("_image_bytes", None)
+
+            recipe = await storage.add_recipe(recipe_data)
+
+            if download_images and image_bytes:
+                local_url = await storage.save_image_from_bytes(image_bytes, recipe.id)
+                if local_url:
+                    await storage.update_recipe(recipe.id, {"image_url": local_url})
+
+            hass.bus.async_fire(EVENT_RECIPE_ADDED, {"recipe_id": recipe.id})
+            imported += 1
+        except Exception as exc:  # noqa: BLE001
+            _LOGGER.warning("Failed to import recipe '%s': %s", recipe_data.get("name"), exc)
+            failed += 1
+
+    _LOGGER.info("Recipe Keeper import: %d imported, %d failed", imported, failed)
+    connection.send_result(msg["id"], {"imported": imported, "failed": failed})
