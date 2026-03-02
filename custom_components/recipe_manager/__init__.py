@@ -105,7 +105,10 @@ async def _register_frontend(hass: HomeAssistant) -> None:
     www_dir = pathlib.Path(__file__).parent / "www"
     url_base = f"/{DOMAIN}/static"
 
-    hass.http.register_static_path(url_base, str(www_dir), cache_headers=False)
+    from homeassistant.components.http import StaticPathConfig
+    await hass.http.async_register_static_paths([
+        StaticPathConfig(url_base, str(www_dir), cache_headers=False)
+    ])
 
     card_url = f"{url_base}/recipe-manager-card.js"
     add_extra_js_url(hass, card_url)
