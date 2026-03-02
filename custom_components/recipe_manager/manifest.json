@@ -1,0 +1,18 @@
+{
+  "domain": "recipe_manager",
+  "name": "Recipe Manager",
+  "version": "1.0.0",
+  "documentation": "https://github.com/thekiwismarthome/recipe-manager",
+  "issue_tracker": "https://github.com/thekiwismarthome/recipe-manager/issues",
+  "requirements": [
+    "recipe-scrapers>=14.0.0",
+    "aiohttp>=3.9.0",
+    "Pillow>=10.0.0",
+    "aiofiles>=23.0.0"
+  ],
+  "dependencies": [],
+  "codeowners": ["@thekiwismarthome"],
+  "config_flow": true,
+  "iot_class": "local_push",
+  "integration_type": "service"
+}
