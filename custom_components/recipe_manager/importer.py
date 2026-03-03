@@ -322,23 +322,26 @@ def _parse_time(text: Optional[str]) -> Optional[int]:
     return None
 
 
+# Compiled once at module level for efficiency
+_INGREDIENT_RE = re.compile(
+    r"^"
+    r"(?P<amount>\d+(?:[.,/]\d+)?(?:\s*[-–]\s*\d+(?:[.,/]\d+)?)?"
+    r"(?:\s+\d+/\d+)?)?"
+    r"\s*"
+    r"(?P<unit>tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lbs?|g|kg|ml|L"
+    r"|litres?|liters?|pints?|quarts?|gallons?|fl\.?\s*oz|cans?"
+    r"|bunches?|heads?|cloves?|slices?|pieces?|sheets?|pinch(?:es)?"
+    r"|dash(?:es)?|handfuls?|sprigs?|stalks?)?\.?"
+    r"\s*"
+    r"(?P<name>.+?)$",
+    re.IGNORECASE,
+)
+
+
 def _parse_ingredient_line(raw: str) -> Dict[str, Any]:
     """Split an ingredient string into {amount, unit, name}."""
     raw = raw.strip()
-    pattern = re.compile(
-        r"^"
-        r"(?P<amount>\d+(?:[.,/]\d+)?(?:\s*[-–]\s*\d+(?:[.,/]\d+)?)?"
-        r"(?:\s+\d+/\d+)?)?"
-        r"\s*"
-        r"(?P<unit>tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lbs?|g|kg|ml|L"
-        r"|litres?|liters?|pints?|quarts?|gallons?|fl\.?\s*oz|cans?"
-        r"|bunches?|heads?|cloves?|slices?|pieces?|sheets?|pinch(?:es)?"
-        r"|dash(?:es)?|handfuls?|sprigs?|stalks?)\.?"
-        r")?\s*"
-        r"(?P<name>.+?)$",
-        re.IGNORECASE,
-    )
-    m = pattern.match(raw)
+    m = _INGREDIENT_RE.match(raw)
     if not m:
         return {"name": raw, "amount": None, "unit": None, "notes": None}
 
