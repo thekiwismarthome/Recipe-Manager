@@ -338,9 +338,34 @@ _INGREDIENT_RE = re.compile(
 )
 
 
+_UNICODE_FRACTIONS: Dict[str, str] = {
+    "\u00bd": "1/2",  # ½
+    "\u00bc": "1/4",  # ¼
+    "\u00be": "3/4",  # ¾
+    "\u2153": "1/3",  # ⅓
+    "\u2154": "2/3",  # ⅔
+    "\u215b": "1/8",  # ⅛
+    "\u215c": "3/8",  # ⅜
+    "\u215d": "5/8",  # ⅝
+    "\u215e": "7/8",  # ⅞
+}
+
+
+def _normalize_fractions(text: str) -> str:
+    """Replace Unicode fraction chars with ASCII equivalents.
+
+    Handles bare fractions ("½" → "1/2") and mixed numbers ("1½" → "1 1/2").
+    """
+    for char, replacement in _UNICODE_FRACTIONS.items():
+        # "1½" → "1 1/2" (digit immediately followed by fraction)
+        text = re.sub(rf"(\d){re.escape(char)}", rf"\1 {replacement}", text)
+        text = text.replace(char, replacement)
+    return text
+
+
 def _parse_ingredient_line(raw: str) -> Dict[str, Any]:
     """Split an ingredient string into {amount, unit, name}."""
-    raw = raw.strip()
+    raw = _normalize_fractions(raw.strip())
     m = _INGREDIENT_RE.match(raw)
     if not m:
         return {"name": raw, "amount": None, "unit": None, "notes": None}
