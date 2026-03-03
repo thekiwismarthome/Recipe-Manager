@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import logging
 import re
+import shutil
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -15,12 +16,15 @@ from .const import (
     STORAGE_KEY_RECIPES,
     STORAGE_KEY_MEAL_PLANS,
     IMAGES_LOCAL_DIR,
+    LEGACY_IMAGES_LOCAL_DIR,
     IMAGE_SIZE,
     IMAGE_QUALITY,
 )
 from .models import Recipe, MealPlanEntry, Ingredient, generate_id, current_timestamp
 
 _LOGGER = logging.getLogger(__name__)
+LOCAL_IMAGE_URL_PREFIX = "/local/images/recipe_manager/"
+LEGACY_IMAGE_URL_PREFIX = "/local/recipe_manager/images/"
 
 
 class RecipeStorage:
@@ -33,6 +37,7 @@ class RecipeStorage:
         self._recipes: Dict[str, Recipe] = {}
         self._meal_plans: Dict[str, MealPlanEntry] = {}
         self._images_dir = Path(hass.config.path(IMAGES_LOCAL_DIR))
+        self._legacy_images_dir = Path(hass.config.path(LEGACY_IMAGES_LOCAL_DIR))
 
     async def async_load(self) -> None:
         """Load all data from storage."""
@@ -58,6 +63,7 @@ class RecipeStorage:
 
         # Ensure image directory exists
         self._images_dir.mkdir(parents=True, exist_ok=True)
+        await self._migrate_legacy_images()
 
     # ------------------------------------------------------------------
     # Recipes
@@ -257,7 +263,7 @@ class RecipeStorage:
             out = io.BytesIO()
             img.save(out, format="WEBP", quality=IMAGE_QUALITY)
             dest.write_bytes(out.getvalue())
-            return f"/local/recipe_manager/images/{filename}"
+            return f"{LOCAL_IMAGE_URL_PREFIX}{filename}"
         except Exception as exc:
             _LOGGER.warning("Failed to convert recipe image: %s", exc)
             return None
@@ -282,10 +288,48 @@ class RecipeStorage:
             out = io.BytesIO()
             img.save(out, format="WEBP", quality=IMAGE_QUALITY)
             dest.write_bytes(out.getvalue())
-            return f"/local/recipe_manager/images/{filename}"
+            return f"{LOCAL_IMAGE_URL_PREFIX}{filename}"
         except Exception as exc:
             _LOGGER.warning("Failed to save image from bytes for %s: %s", recipe_id, exc)
             return None
+
+    async def _migrate_legacy_images(self) -> None:
+        """Move old image files and URLs to the new standard path."""
+        moved_files = 0
+        updated_urls = 0
+
+        if self._legacy_images_dir.exists() and self._legacy_images_dir != self._images_dir:
+            for src in self._legacy_images_dir.glob("*"):
+                if not src.is_file():
+                    continue
+                dest = self._images_dir / src.name
+                if dest.exists():
+                    continue
+                try:
+                    shutil.move(str(src), str(dest))
+                    moved_files += 1
+                except Exception as exc:
+                    _LOGGER.debug("Could not move legacy image %s: %s", src, exc)
+
+        for recipe in self._recipes.values():
+            image_url = recipe.image_url or ""
+            if image_url.startswith(LEGACY_IMAGE_URL_PREFIX):
+                recipe.image_url = image_url.replace(
+                    LEGACY_IMAGE_URL_PREFIX, LOCAL_IMAGE_URL_PREFIX, 1
+                )
+                recipe.updated_at = current_timestamp()
+                updated_urls += 1
+
+        if updated_urls:
+            await self._save_recipes()
+
+        if moved_files or updated_urls:
+            _LOGGER.info(
+                "Migrated recipe images to %s (moved_files=%d, updated_urls=%d)",
+                IMAGES_LOCAL_DIR,
+                moved_files,
+                updated_urls,
+            )
 
     # ------------------------------------------------------------------
     # Private save helpers
