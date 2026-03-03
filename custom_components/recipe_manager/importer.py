@@ -42,17 +42,31 @@ def parse_recipe_keeper_html(
 
     soup = BeautifulSoup(html_content, "html.parser")
 
+    # Strategy 1: standard Recipe Keeper class
     containers = soup.find_all(class_="recipe-details")
+    _LOGGER.info("Recipe Keeper import: found %d containers with class='recipe-details'", len(containers))
+
+    # Strategy 2: any block that contains a recipe-name child
     if not containers:
         containers = [
             el for el in soup.find_all(["article", "section", "div"])
             if el.find(class_=re.compile(r"recipe-name", re.I))
         ]
+        _LOGGER.info("Recipe Keeper import: fallback found %d containers with recipe-name child", len(containers))
 
     if not containers:
+        # Log a sample of the HTML to help diagnose structure
+        sample = html_content[:1000].replace("\n", " ")
+        _LOGGER.warning("Recipe Keeper import: no recipe containers found. HTML sample: %s", sample)
         raise ValueError(
             "No recipe containers found — check this is a valid Recipe Keeper export"
         )
+
+    # Log the first container's HTML for diagnostics
+    _LOGGER.info(
+        "Recipe Keeper import: first container HTML sample: %s",
+        str(containers[0])[:600].replace("\n", " "),
+    )
 
     recipes: List[Dict[str, Any]] = []
     for container in containers:
@@ -60,8 +74,10 @@ def parse_recipe_keeper_html(
             recipe = _parse_recipe_container(container, images)
             if recipe and recipe.get("name"):
                 recipes.append(recipe)
+            elif recipe:
+                _LOGGER.warning("Recipe Keeper import: skipping container with no name")
         except Exception as exc:  # noqa: BLE001
-            _LOGGER.debug("Skipping unparseable recipe container: %s", exc)
+            _LOGGER.warning("Recipe Keeper import: skipping unparseable container: %s", exc)
 
     _LOGGER.info(
         "Parsed %d recipes from Recipe Keeper HTML (%d images available)",

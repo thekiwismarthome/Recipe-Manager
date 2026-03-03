@@ -79,6 +79,9 @@ class RecipeStorage:
             ingredients=[Ingredient.from_dict(i) for i in data.get("ingredients", [])],
             instructions=data.get("instructions", []),
             tags=data.get("tags", []),
+            courses=data.get("courses", []),
+            categories=data.get("categories", []),
+            collections=data.get("collections", []),
             source_url=data.get("source_url"),
             description=data.get("description"),
             image_url=data.get("image_url"),
@@ -110,6 +113,7 @@ class RecipeStorage:
             "name", "source_url", "description", "image_url", "cuisine", "category",
             "prep_time", "cook_time", "total_time", "servings", "servings_text",
             "nutrition", "is_favourite", "rating", "notes", "tags",
+            "courses", "categories", "collections",
         ]
         for key in updatable:
             if key in data:
