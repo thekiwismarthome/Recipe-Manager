@@ -230,14 +230,32 @@ def _parse_recipe_container(
                     ingredients.append(_parse_ingredient_line(line))
 
     # --- Instructions / Directions ---
+    # Recipe Keeper uses several class names across versions; try them all.
     instructions: List[str] = []
     method_el = container.find(
         class_=re.compile(
-            r"recipe-(method|directions?|instructions?|steps?)"
-            r"|e-instructions?|directions?-list|steps?-list",
+            r"recipe-method-directions|recipe-method|recipe-directions?"
+            r"|recipe-instructions?|recipe-steps?"
+            r"|e-instructions?|directions?-list|steps?-list"
+            r"|method|directions?",
             re.I,
         )
     )
+
+    if not method_el:
+        # Fallback: look for any element whose text starts with numbered steps
+        for el in container.find_all(["ol", "ul"]):
+            if el.find("li"):
+                # Heuristic: if the first <li> looks like a cooking step
+                first_li = el.find("li")
+                first_text = first_li.get_text(strip=True) if first_li else ""
+                if len(first_text) > 10:
+                    # Check it's not the ingredients list
+                    if el is not ing_el:
+                        method_el = el
+                        _LOGGER.debug("Recipe Keeper import: using fallback <ol/ul> for directions")
+                        break
+
     if method_el:
         items = method_el.find_all("li") or method_el.find_all("p")
         if items:
@@ -248,12 +266,17 @@ def _parse_recipe_container(
                 if txt:
                     instructions.append(txt)
         else:
-            for line in method_el.get_text("\n", strip=True).split("\n"):
+            raw_text = method_el.get_text("\n", strip=True)
+            for line in raw_text.split("\n"):
                 line = re.sub(r"^(?:Step\s*)?\d+[.):\s]+", "", line.strip(), flags=re.I).strip()
                 if line:
                     instructions.append(line)
+    else:
+        _LOGGER.warning(
+            "Recipe Keeper import: no directions element found for recipe '%s'", name
+        )
 
-    # --- Nutrition (best-effort) ---
+    # --- Nutrition (from dedicated element, then from notes text) ---
     nutrition: Optional[Dict[str, str]] = None
     nutr_el = container.find(
         class_=re.compile(r"recipe-nutrition", re.I)
@@ -268,6 +291,13 @@ def _parse_recipe_container(
                 nutrition[key] = m.group(2).strip()
         if not nutrition:
             nutrition = None
+
+    # If no dedicated nutrition element, try to parse from notes
+    if not nutrition and notes:
+        parsed_nutrition, cleaned_notes = _extract_nutrition_from_notes(notes)
+        if parsed_nutrition:
+            nutrition = parsed_nutrition
+            notes = cleaned_notes  # Remove nutrition lines from notes
 
     return {
         "name": name.strip(),
@@ -322,16 +352,96 @@ def _parse_time(text: Optional[str]) -> Optional[int]:
     return None
 
 
-# Compiled once at module level for efficiency
+# Globally-accepted measurement abbreviations.
+# Covers both American spellings (liter, gram) and
+# British/international spellings (litre, gramme, etc.).
+_UNIT_NORMALIZE: Dict[str, str] = {
+    # Teaspoon
+    "teaspoon":           "tsp",
+    "teaspoons":          "tsp",
+    # Tablespoon
+    "tablespoon":         "Tbsp",
+    "tablespoons":        "Tbsp",
+    # Ounce / fluid ounce
+    "ounce":              "oz",
+    "ounces":             "oz",
+    "fluid ounce":        "fl oz",
+    "fluid ounces":       "fl oz",
+    # Pound
+    "pound":              "lb",
+    "pounds":             "lb",
+    "lbs":                "lb",
+    # Gram  (American: gram / British: gramme)
+    "gram":               "g",
+    "grams":              "g",
+    "gramme":             "g",
+    "grammes":            "g",
+    # Kilogram  (American: kilogram / British: kilogramme)
+    "kilogram":           "kg",
+    "kilograms":          "kg",
+    "kilogramme":         "kg",
+    "kilogrammes":        "kg",
+    # Millilitre  (British: millilitre / American: milliliter)
+    "millilitre":         "ml",
+    "millilitres":        "ml",
+    "milliliter":         "ml",
+    "milliliters":        "ml",
+    # Centilitre  (British: centilitre / American: centiliter)
+    "centilitre":         "cl",
+    "centilitres":        "cl",
+    "centiliter":         "cl",
+    "centiliters":        "cl",
+    # Decilitre  (British: decilitre / American: deciliter)
+    "decilitre":          "dl",
+    "decilitres":         "dl",
+    "deciliter":          "dl",
+    "deciliters":         "dl",
+    # Litre  (British: litre / American: liter)
+    "litre":              "L",
+    "litres":             "L",
+    "liter":              "L",
+    "liters":             "L",
+    # Pint / quart / gallon (same spelling internationally)
+    "pint":               "pt",
+    "pints":              "pt",
+    "quart":              "qt",
+    "quarts":             "qt",
+    "gallon":             "gal",
+    "gallons":            "gal",
+}
+
+
+def _normalize_unit(unit: Optional[str]) -> Optional[str]:
+    """Normalize a measurement unit to its standard abbreviation."""
+    if not unit:
+        return unit
+    return _UNIT_NORMALIZE.get(unit.lower(), unit)
+
+
+# Compiled once at module level for efficiency.
+# Unit alternation covers both American and British/international spellings.
 _INGREDIENT_RE = re.compile(
     r"^"
     r"(?P<amount>\d+(?:[.,/]\d+)?(?:\s*[-–]\s*\d+(?:[.,/]\d+)?)?"
     r"(?:\s+\d+/\d+)?)?"
     r"\s*"
-    r"(?P<unit>tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lbs?|g|kg|ml|L"
-    r"|litres?|liters?|pints?|quarts?|gallons?|fl\.?\s*oz|cans?"
-    r"|bunches?|heads?|cloves?|slices?|pieces?|sheets?|pinch(?:es)?"
-    r"|dash(?:es)?|handfuls?|sprigs?|stalks?)?\.?"
+    r"(?P<unit>"
+    # Abbreviations first (short, unambiguous)
+    r"tsp|tbsp|fl\.?\s*oz"
+    # Full names — teaspoon/tablespoon
+    r"|tablespoons?|teaspoons?"
+    # Volume — litre/liter/millilitre/milliliter/centilitre/centiliter/decilitre/deciliter
+    r"|(?:milli|centi|deci)?lit(?:re|er)s?"
+    r"|ml|cl|dl|L"
+    # Mass — gramme/gram/kilogramme/kilogram
+    r"|kilo(?:gramme|gram)s?|(?:gramme|gram)s?"
+    r"|kg|g"
+    # Other imperial
+    r"|cups?|oz|lbs?|pints?|quarts?|gallons?"
+    # Countable / descriptive
+    r"|cans?|bunches?|heads?|cloves?|slices?|pieces?|sheets?"
+    r"|pinch(?:es)?|dash(?:es)?|handfuls?|sprigs?|stalks?"
+    r")?\.?"
     r"\s*"
     r"(?P<name>.+?)$",
     re.IGNORECASE,
@@ -371,7 +481,7 @@ def _parse_ingredient_line(raw: str) -> Dict[str, Any]:
         return {"name": raw, "amount": None, "unit": None, "notes": None}
 
     amount = (m.group("amount") or "").strip() or None
-    unit = (m.group("unit") or "").strip() or None
+    unit = _normalize_unit((m.group("unit") or "").strip() or None)
     rest = (m.group("name") or "").strip()
     name, notes = rest, None
     if "," in rest:
@@ -379,3 +489,50 @@ def _parse_ingredient_line(raw: str) -> Dict[str, Any]:
         name = parts[0].strip()
         notes = parts[1].strip()
     return {"name": name, "amount": amount, "unit": unit, "notes": notes}
+
+
+# Nutrition field patterns to extract from free-text notes
+_NUTRITION_PATTERNS: List[Tuple[str, str]] = [
+    (r"calories?\s*[:\-]\s*(\d+(?:\.\d+)?)\s*(?:kcal)?",                  "calories"),
+    (r"total\s+fat\s*[:\-]\s*(\d+(?:\.\d+)?)\s*g?",                       "fat"),
+    (r"saturated\s+fat\s*[:\-]\s*(\d+(?:\.\d+)?)\s*g?",                   "saturated_fat"),
+    (r"trans\s+fat\s*[:\-]\s*(\d+(?:\.\d+)?)\s*g?",                       "trans_fat"),
+    (r"cholesterol\s*[:\-]\s*(\d+(?:\.\d+)?)\s*mg?",                      "cholesterol"),
+    (r"sodium\s*[:\-]\s*(\d+(?:\.\d+)?)\s*mg?",                           "sodium"),
+    (r"(?:total\s+)?carb(?:ohydrate)?s?\s*[:\-]\s*(\d+(?:\.\d+)?)\s*g?",  "carbohydrates"),
+    (r"(?:dietary\s+)?fiber\s*[:\-]\s*(\d+(?:\.\d+)?)\s*g?",              "fiber"),
+    (r"(?:total\s+)?sugars?\s*[:\-]\s*(\d+(?:\.\d+)?)\s*g?",              "sugar"),
+    (r"protein\s*[:\-]\s*(\d+(?:\.\d+)?)\s*g?",                           "protein"),
+]
+
+
+def _extract_nutrition_from_notes(
+    notes_text: str,
+) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+    """Try to extract nutrition values embedded in the notes field.
+
+    Returns (nutrition_dict_or_None, cleaned_notes_or_None).
+    Lines that contain matched nutrition data are removed from the returned notes.
+    """
+    if not notes_text:
+        return None, notes_text
+
+    nutrition: Dict[str, str] = {}
+    remaining_lines: List[str] = []
+
+    for line in notes_text.splitlines():
+        matched = False
+        for pattern, key in _NUTRITION_PATTERNS:
+            m = re.search(pattern, line, re.I)
+            if m:
+                nutrition[key] = m.group(1)
+                matched = True
+                break
+        if not matched:
+            remaining_lines.append(line)
+
+    if not nutrition:
+        return None, notes_text
+
+    cleaned = "\n".join(remaining_lines).strip() or None
+    return nutrition, cleaned
