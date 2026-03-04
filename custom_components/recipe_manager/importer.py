@@ -135,13 +135,52 @@ def _text(container: Any, *class_names: str) -> Optional[str]:
     return None
 
 
+def _itemprop(container: Any, prop: str) -> Optional[str]:
+    """Return the text/content of the first element with itemprop=prop."""
+    el = container.find(attrs={"itemprop": prop})
+    if not el:
+        return None
+    # <meta itemprop="..." content="..."> — use content attribute
+    if el.name == "meta":
+        return el.get("content", "").strip() or None
+    return el.get_text(" ", strip=True) or None
+
+
+def _itemprop_all(container: Any, prop: str) -> List[str]:
+    """Return all text/content values for elements with itemprop=prop."""
+    values = []
+    for el in container.find_all(attrs={"itemprop": prop}):
+        if el.name == "meta":
+            v = el.get("content", "").strip()
+        else:
+            v = el.get_text(" ", strip=True)
+        if v:
+            values.append(v)
+    return values
+
+
+def _parse_iso_duration(iso: Optional[str]) -> Optional[int]:
+    """Parse ISO 8601 duration (PT5M, PT1H30M) to minutes."""
+    if not iso:
+        return None
+    iso = iso.strip()
+    m = re.match(r"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$", iso, re.I)
+    if not m:
+        return None
+    hours = int(m.group(1) or 0)
+    mins  = int(m.group(2) or 0)
+    # Ignore seconds for recipe times
+    return hours * 60 + mins or None
+
+
 def _parse_recipe_container(
     container: Any, images: Dict[str, bytes]
 ) -> Dict[str, Any]:
     """Parse one recipe <div class="recipe-details"> block."""
 
     # --- Name ---
-    name = _text(container, "recipe-name")
+    name = (_itemprop(container, "name")
+            or _text(container, "recipe-name"))
     if not name:
         for tag in ("h2", "h3", "h1"):
             el = container.find(tag)
@@ -152,33 +191,63 @@ def _parse_recipe_container(
         return {}
 
     # --- Description ---
-    description = _text(container, "recipe-description")
+    description = (_itemprop(container, "description")
+                   or _text(container, "recipe-description"))
 
     # --- Servings ---
-    servings_text = _text(
-        container, "recipe-serving-size", "recipe-yield", "recipe-servings"
-    )
+    servings_text = (_itemprop(container, "recipeYield")
+                     or _text(container, "recipe-serving-size", "recipe-yield", "recipe-servings"))
     servings: Optional[int] = None
     if servings_text:
         m = re.search(r"\d+", servings_text)
         servings = int(m.group()) if m else None
 
-    # --- Times ---
-    prep_time = _parse_time(_text(container, "recipe-prep-time", "recipe-preptime"))
-    cook_time = _parse_time(_text(container, "recipe-cook-time", "recipe-cooktime"))
-    total_time = _parse_time(
-        _text(container, "recipe-total-time", "recipe-totaltime")
-    )
+    # --- Times (prefer ISO 8601 <meta> over text, fall back to text) ---
+    prep_meta  = _itemprop(container, "prepTime")
+    cook_meta  = _itemprop(container, "cookTime")
+    total_meta = _itemprop(container, "totalTime")
 
-    # --- Cuisine / Category → tags ---
+    prep_time  = _parse_iso_duration(prep_meta)  or _parse_time(_text(container, "recipe-prep-time",  "recipe-preptime"))
+    cook_time  = _parse_iso_duration(cook_meta)  or _parse_time(_text(container, "recipe-cook-time",  "recipe-cooktime"))
+    total_time = _parse_iso_duration(total_meta) or _parse_time(_text(container, "recipe-total-time", "recipe-totaltime"))
+
+    # --- Courses (itemprop="recipeCourse") ---
+    courses: List[str] = _itemprop_all(container, "recipeCourse")
+    if not courses:
+        course_text = _text(container, "recipe-course", "recipe-courses")
+        if course_text:
+            courses = [c.strip() for c in re.split(r"[,;/]", course_text) if c.strip()]
+
+    # --- Categories (itemprop="recipeCategory" — often in <meta> tags) ---
+    categories: List[str] = _itemprop_all(container, "recipeCategory")
+    if not categories:
+        cat_text = _text(container, "recipe-categories", "recipe-category")
+        if cat_text:
+            categories = [c.strip() for c in re.split(r"[,;/]", cat_text) if c.strip()]
+
+    # --- Collections (itemprop="recipeCollection") ---
+    collections: List[str] = _itemprop_all(container, "recipeCollection")
+    if not collections:
+        coll_text = _text(container, "recipe-collections", "recipe-collection")
+        if coll_text:
+            collections = [c.strip() for c in re.split(r"[,;/]", coll_text) if c.strip()]
+
+    # Build tags from categories (for compatibility)
+    tags: List[str] = [c.lower() for c in categories]
+
+    # --- Cuisine ---
     cuisine = _text(container, "recipe-cuisine")
-    category_text = _text(container, "recipe-categories", "recipe-category")
-    tags: List[str] = []
-    if category_text:
-        tags = [t.strip().lower() for t in re.split(r"[,;/]", category_text) if t.strip()]
 
     # --- Source URL ---
-    source_url = _text(container, "recipe-source", "recipe-url", "recipe-source-url")
+    source_url = (_itemprop(container, "recipeSource")
+                  or _text(container, "recipe-source", "recipe-url", "recipe-source-url"))
+    # Also check <a> inside a source element
+    if not source_url:
+        src_el = container.find(class_=re.compile(r"recipe-source", re.I))
+        if src_el:
+            a = src_el.find("a")
+            if a:
+                source_url = a.get("href", "").strip() or None
     if source_url and not source_url.startswith("http"):
         source_url = None
 
@@ -209,18 +278,28 @@ def _parse_recipe_container(
                     break
 
     # --- Ingredients ---
+    # Recipe Keeper uses itemprop="recipeIngredients" or class="recipe-ingredients"
     ingredients: List[Dict[str, Any]] = []
-    ing_el = container.find(
-        class_=re.compile(
+    ing_el = (
+        container.find(attrs={"itemprop": "recipeIngredients"})
+        or container.find(class_=re.compile(
             r"recipe-ingredients?|p-ingredients?|ingredient-list|ingredients-list", re.I
-        )
+        ))
     )
     if ing_el:
-        items = ing_el.find_all("li") or ing_el.find_all("p") or ing_el.find_all("span")
-        if items:
-            for item in items:
+        raw_items = ing_el.find_all("li") or ing_el.find_all("p") or ing_el.find_all("span")
+        if raw_items:
+            for item in raw_items:
+                # Check for section heading: bold/strong tag or ALL-CAPS-only content
+                is_bold = bool(item.find(["b", "strong"]))
                 txt = item.get_text(" ", strip=True)
-                if txt:
+                if not txt:
+                    continue
+                if is_bold and _is_ingredient_heading(txt):
+                    ingredients.append({"name": txt.rstrip(":"), "amount": None, "unit": None, "notes": None, "is_heading": True})
+                elif _is_ingredient_heading(txt) and not re.search(r"\d", txt):
+                    ingredients.append({"name": txt.rstrip(":"), "amount": None, "unit": None, "notes": None, "is_heading": True})
+                else:
                     ingredients.append(_parse_ingredient_line(txt))
         else:
             # Fall back to splitting the whole text block by newlines
@@ -230,16 +309,18 @@ def _parse_recipe_container(
                     ingredients.append(_parse_ingredient_line(line))
 
     # --- Instructions / Directions ---
-    # Recipe Keeper uses several class names across versions; try them all.
+    # Recipe Keeper uses itemprop="recipeDirections" (no class!) or class-based variants
     instructions: List[str] = []
-    method_el = container.find(
-        class_=re.compile(
+    method_el = (
+        container.find(attrs={"itemprop": "recipeDirections"})
+        or container.find(attrs={"itemprop": "recipeInstructions"})
+        or container.find(class_=re.compile(
             r"recipe-method-directions|recipe-method|recipe-directions?"
             r"|recipe-instructions?|recipe-steps?"
             r"|e-instructions?|directions?-list|steps?-list"
             r"|method|directions?",
             re.I,
-        )
+        ))
     )
 
     if not method_el:
@@ -308,6 +389,9 @@ def _parse_recipe_container(
         "cook_time": cook_time,
         "total_time": total_time,
         "cuisine": cuisine,
+        "courses": courses,
+        "categories": categories,
+        "collections": collections,
         "tags": tags,
         "source_url": source_url,
         "notes": notes,
@@ -324,6 +408,25 @@ def _parse_recipe_container(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _is_ingredient_heading(text: str) -> bool:
+    """Return True if the text looks like a section heading within an ingredients list.
+
+    Headings are typically:
+    - ALL CAPS (with optional trailing colon/punctuation), e.g. "ICING" or "FOR THE SAUCE:"
+    - Title-case short phrases with no quantity digits (handled by caller)
+    """
+    stripped = text.rstrip(":").strip()
+    if not stripped:
+        return False
+    # All-uppercase (allow spaces, punctuation)
+    if stripped == stripped.upper() and re.search(r"[A-Z]", stripped):
+        return True
+    # Phrase starting with "For the …" / "For …" (common heading pattern)
+    if re.match(r"^For\s+", stripped, re.I) and not re.search(r"\d", stripped):
+        return True
+    return False
+
 
 def _parse_time(text: Optional[str]) -> Optional[int]:
     """Parse human time strings to minutes.
@@ -483,6 +586,10 @@ def _parse_ingredient_line(raw: str) -> Dict[str, Any]:
     amount = (m.group("amount") or "").strip() or None
     unit = _normalize_unit((m.group("unit") or "").strip() or None)
     rest = (m.group("name") or "").strip()
+
+    # Strip leading "of" / "of the" — e.g. "200g of butter" → "butter"
+    rest = re.sub(r"^of\s+(?:the\s+)?", "", rest, flags=re.I).strip()
+
     name, notes = rest, None
     if "," in rest:
         parts = rest.split(",", 1)
