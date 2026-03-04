@@ -357,21 +357,62 @@ def _parse_recipe_container(
             "Recipe Keeper import: no directions element found for recipe '%s'", name
         )
 
-    # --- Nutrition (from dedicated element, then from notes text) ---
+    # --- Nutrition (itemprop schema.org, then class-based, then notes text) ---
     nutrition: Optional[Dict[str, str]] = None
-    nutr_el = container.find(
-        class_=re.compile(r"recipe-nutrition", re.I)
+
+    # Map from schema.org itemprop names → internal keys
+    _NUTR_ITEMPROP_MAP = {
+        "calories":              "calories",
+        "fatContent":            "fat",
+        "saturatedFatContent":   "saturated_fat",
+        "transFatContent":       "trans_fat",
+        "cholesterolContent":    "cholesterol",
+        "sodiumContent":         "sodium",
+        "carbohydrateContent":   "carbohydrates",
+        "fiberContent":          "fiber",
+        "sugarContent":          "sugar",
+        "proteinContent":        "protein",
+    }
+
+    # Strategy 1: look for a nutrition wrapper (itemprop="nutrition" or class)
+    nutr_el = (
+        container.find(attrs={"itemprop": "nutrition"})
+        or container.find(class_=re.compile(r"recipe-nutrition", re.I))
     )
+
+    # Strategy 2: look for individual nutrition itemprop values directly on container
+    # (some Recipe Keeper exports have them outside any wrapper)
+    direct_nutr: Dict[str, str] = {}
+    for ip, key in _NUTR_ITEMPROP_MAP.items():
+        val = _itemprop(container, ip)
+        if val:
+            num_m = re.search(r"[\d.]+", val)
+            if num_m:
+                direct_nutr[key] = num_m.group()
+
     if nutr_el:
         nutrition = {}
-        for item in nutr_el.find_all(["li", "span", "div", "td"]):
-            txt = item.get_text(" ", strip=True)
-            m = re.match(r"(.+?):\s*(.+)", txt)
-            if m:
-                key = m.group(1).strip().lower().replace(" ", "_")
-                nutrition[key] = m.group(2).strip()
+        # First try itemprop children inside the wrapper
+        for ip, key in _NUTR_ITEMPROP_MAP.items():
+            val = _itemprop(nutr_el, ip)
+            if val:
+                num_m = re.search(r"[\d.]+", val)
+                if num_m:
+                    nutrition[key] = num_m.group()
+        # If no itemprop children, fall back to key:value text parsing
+        if not nutrition:
+            for item in nutr_el.find_all(["li", "span", "div", "td", "p"]):
+                txt = item.get_text(" ", strip=True)
+                m = re.match(r"(.+?):\s*(.+)", txt)
+                if m:
+                    key = m.group(1).strip().lower().replace(" ", "_")
+                    nutrition[key] = m.group(2).strip()
         if not nutrition:
             nutrition = None
+
+    # Merge direct itemprop values (may supplement or replace)
+    if direct_nutr:
+        nutrition = {**(nutrition or {}), **direct_nutr} or None
 
     # If no dedicated nutrition element, try to parse from notes
     if not nutrition and notes:
