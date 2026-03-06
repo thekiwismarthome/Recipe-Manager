@@ -460,85 +460,101 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     }
     .empty-state ha-icon { --mdc-icon-size: 56px; opacity: 0.4; }
     .empty-state p { margin: 0; font-size: 15px; }
-  `}customElements.define("rm-recipe-grid",ue);const me=[{key:"calories",label:"Calories",unit:"kcal",bold:!0},{key:"fat",label:"Total Fat",unit:"g"},{key:"saturated_fat",label:"Saturated Fat",unit:"g",indent:!0},{key:"cholesterol",label:"Cholesterol",unit:"mg"},{key:"sodium",label:"Sodium",unit:"mg"},{key:"carbohydrates",label:"Total Carbohydrate",unit:"g"},{key:"fiber",label:"Dietary Fiber",unit:"g",indent:!0},{key:"sugar",label:"Total Sugars",unit:"g",indent:!0},{key:"protein",label:"Protein",unit:"g"}],fe=/(\d+\s*(?:hours?|hrs?)\s*(?:and\s*)?\d*\s*(?:minutes?|mins?)?|\d+\s*(?:minutes?|mins?|seconds?|secs?|hours?|hrs?))/gi;function ge(e){const t=e.toLowerCase();let i=0;const r=t.match(/(\d+)\s*h(?:ours?|rs?)?/);r&&(i+=3600*parseInt(r[1]));const a=t.match(/(\d+)\s*m(?:in(?:utes?)?)?(?!\s*l)/);a&&(i+=60*parseInt(a[1]));const n=t.match(/(\d+)\s*s(?:ec(?:onds?)?)?/);if(n&&(i+=parseInt(n[1])),!i){const e=t.match(/^(\d+)$/);e&&(i=60*parseInt(e[1]))}return i||0}const be={oz:{factor:28.3495,to:"g",toFull:"g"},lb:{factor:453.592,to:"g",toFull:"g",thresholdKg:500},cup:{factor:250,to:"ml",toFull:"ml"},cups:{factor:250,to:"ml",toFull:"ml"},"fl oz":{factor:29.5735,to:"ml",toFull:"ml"},pt:{factor:473.176,to:"ml",toFull:"ml"},qt:{factor:946.353,to:"ml",toFull:"ml"}};class ve extends se{static properties={recipe:{type:Object},api:{type:Object},shoppingLists:{type:Array},slmAvailable:{type:Boolean},settings:{type:Object},_editing:{type:Boolean},_editData:{type:Object},_servingMult:{type:Number},_activeTab:{type:String},_showShoppingPicker:{type:Boolean},_selectedListId:{type:String},_checkedIngredients:{type:Object},_shoppingAdding:{type:Boolean},_shoppingResult:{type:String},_confirmDelete:{type:Boolean},_downloading:{type:Boolean},_hoverRating:{type:Number},_photoUrlInput:{type:String},_addingPhotoUrl:{type:Boolean},_metricMode:{type:Boolean},_wakeActive:{type:Boolean},_completedSteps:{type:Object}};constructor(){super(),this.recipe=null,this.api=null,this.shoppingLists=[],this.slmAvailable=!1,this.settings={},this._editing=!1,this._editData={},this._servingMult=1,this._activeTab="ingredients",this._showShoppingPicker=!1,this._selectedListId="",this._checkedIngredients=null,this._shoppingAdding=!1,this._shoppingResult=null,this._confirmDelete=!1,this._downloading=!1,this._hoverRating=0,this._photoUrlInput="",this._addingPhotoUrl=!1,this._metricMode=!1,this._wakeActive=!1,this._completedSteps=new Set,this._wakeLockSentinel=null,this._wakeLockTimeout=null}disconnectedCallback(){super.disconnectedCallback(),this._releaseWakeLock()}async _requestWakeLock(){if("wakeLock"in navigator)try{this._wakeLockSentinel=await navigator.wakeLock.request("screen"),this._wakeActive=!0;const e=this.settings?.wakeLockDuration??60;this._wakeLockTimeout=setTimeout(()=>this._releaseWakeLock(),6e4*e)}catch(e){console.warn("Wake Lock failed:",e)}}async _releaseWakeLock(){if(this._wakeLockSentinel){try{await this._wakeLockSentinel.release()}catch{}this._wakeLockSentinel=null}this._wakeActive=!1,this._wakeLockTimeout&&(clearTimeout(this._wakeLockTimeout),this._wakeLockTimeout=null)}updated(e){e.has("recipe")&&this.recipe&&(this._servingMult=1,this._editing=!1,this._confirmDelete=!1,this._shoppingResult=null,this._showShoppingPicker=!1,this._checkedIngredients=null,this._photoUrlInput="",this._metricMode=!1,this._completedSteps=new Set),e.has("shoppingLists")&&this.shoppingLists.length&&!this._selectedListId&&(this._selectedListId=this.shoppingLists[0]?.id??"")}_formatTime(e){if(!e)return null;if(e<60)return`${e} min`;const t=Math.floor(e/60),i=e%60;return i?`${t}h ${i}m`:`${t}h`}_scaleAmount(e){if(!e||isNaN(parseFloat(e)))return e;const t=parseFloat(e)*this._servingMult;return Number.isInteger(t)?String(t):t.toFixed(1).replace(/\.0$/,"")}_startEdit(){const e=this.recipe.nutrition||{};this._editData={name:this.recipe.name||"",description:this.recipe.description||"",source_url:this.recipe.source_url||"",servings:this.recipe.servings||"",prep_time:this.recipe.prep_time||"",cook_time:this.recipe.cook_time||"",tags:(this.recipe.tags||[]).join(", "),courses:(this.recipe.courses||[]).join(", "),categories:(this.recipe.categories||[]).join(", "),collections:(this.recipe.collections||[]).join(", "),notes:this.recipe.notes||"",rating:this.recipe.rating||0,cal:e.calories||"",fat:e.fat||"",satf:e.saturated_fat||"",chol:e.cholesterol||"",sod:e.sodium||"",carb:e.carbohydrates||"",fib:e.fiber||"",sug:e.sugar||"",prot:e.protein||""},this._editing=!0}_cancelEdit(){this._editing=!1,this._editData={}}_handleEditField(e,t){this._editData={...this._editData,[e]:t}}async _saveEdit(){const e=this._editData,t=e=>e?e.split(",").map(e=>e.trim()).filter(Boolean):[],i={},r={cal:"calories",fat:"fat",satf:"saturated_fat",chol:"cholesterol",sod:"sodium",carb:"carbohydrates",fib:"fiber",sug:"sugar",prot:"protein"};let a=!1;for(const[t,n]of Object.entries(r))""!==e[t]&&null!=e[t]&&(i[n]=e[t],a=!0);const n={name:e.name,description:e.description,source_url:e.source_url,servings:parseInt(e.servings)||null,prep_time:parseInt(e.prep_time)||null,cook_time:parseInt(e.cook_time)||null,tags:t(e.tags),courses:t(e.courses),categories:t(e.categories),collections:t(e.collections),notes:e.notes,rating:e.rating||null,nutrition:a?i:null};this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:n},bubbles:!0,composed:!0})),this._editing=!1}_handleToggleFav(){this.dispatchEvent(new CustomEvent("rm-toggle-favourite",{detail:{recipeId:this.recipe.id},bubbles:!0,composed:!0}))}async _handleDownloadImage(){if(this.recipe.image_url){this._downloading=!0;try{const e=await this.api.downloadRecipeImage(this.recipe.id,this.recipe.image_url);e?.local_url&&this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:{image_url:e.local_url}},bubbles:!0,composed:!0}))}catch(e){console.warn("Image download failed:",e)}finally{this._downloading=!1}}}_handleDeleteRecipe(){if(!this._confirmDelete)return this._confirmDelete=!0,void setTimeout(()=>{this._confirmDelete=!1},3e3);this.dispatchEvent(new CustomEvent("rm-delete-recipe",{detail:{recipeId:this.recipe.id},bubbles:!0,composed:!0}))}_openShoppingPicker(){this._checkedIngredients=new Set,this._showShoppingPicker=!0}_toggleIngredient(e){const t=new Set(this._checkedIngredients);t.has(e)?t.delete(e):t.add(e),this._checkedIngredients=t}_selectAllIngredients(){const e=this.recipe?.ingredients?.length??0;this._checkedIngredients=new Set([...Array(e).keys()])}_clearAllIngredients(){this._checkedIngredients=new Set}async _handleAddToShopping(){const e=this._checkedIngredients;if(!e?.size)return;const t=(this.recipe.ingredients||[]).filter((t,i)=>e.has(i)).map(e=>({...e,amount:this._scaleAmount(e.amount)}));this._shoppingAdding=!0,this._shoppingResult=null,this.dispatchEvent(new CustomEvent("rm-add-to-shopping",{detail:{ingredients:t,listId:this._selectedListId||null,recipeName:this.recipe.name},bubbles:!0,composed:!0})),await new Promise(e=>setTimeout(e,600)),this._shoppingAdding=!1,this._shoppingResult="success",this._showShoppingPicker=!1,setTimeout(()=>{this._shoppingResult=null},2500)}_fireTimer(e,t){this.dispatchEvent(new CustomEvent("rm-start-timer",{detail:{seconds:e,label:t},bubbles:!0,composed:!0}))}async _handleAddPhotoUrl(){const e=this._photoUrlInput.trim();if(e){this._addingPhotoUrl=!0;try{const t=this.recipe.photos||[],i={photos:[...t,e]};this.recipe.image_url||(i.image_url=e),this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:i},bubbles:!0,composed:!0})),this._photoUrlInput=""}finally{this._addingPhotoUrl=!1}}}_handleCameraCapture(e){const t=e.target.files?.[0];if(!t)return;const i=new FileReader;i.onload=async e=>{const t=e.target.result.split(",")[1];try{const e=await this.api.uploadRecipeImage(this.recipe.id,t);if(e?.image_url||e?.local_url){const t=e.image_url||e.local_url,i={photos:[...this.recipe.photos||[],t]};this.recipe.image_url||(i.image_url=t),this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:i},bubbles:!0,composed:!0}))}}catch(e){console.warn("Camera upload failed:",e)}},i.readAsDataURL(t)}_setMainPhoto(e){this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:{image_url:e}},bubbles:!0,composed:!0}))}_removePhoto(e){const t=(this.recipe.photos||[]).filter(t=>t!==e),i={photos:t};this.recipe.image_url===e&&(i.image_url=t[0]||null),this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:i},bubbles:!0,composed:!0}))}_renderChipGroup(e,t,i){return t?.length?U`
+  `}customElements.define("rm-recipe-grid",ue);const me=[{key:"calories",label:"Calories",unit:"kcal",bold:!0},{key:"fat",label:"Total Fat",unit:"g"},{key:"saturated_fat",label:"Saturated Fat",unit:"g",indent:!0},{key:"cholesterol",label:"Cholesterol",unit:"mg"},{key:"sodium",label:"Sodium",unit:"mg"},{key:"carbohydrates",label:"Total Carbohydrate",unit:"g"},{key:"fiber",label:"Dietary Fiber",unit:"g",indent:!0},{key:"sugar",label:"Total Sugars",unit:"g",indent:!0},{key:"protein",label:"Protein",unit:"g"}],fe=/(\d+\s*(?:hours?|hrs?)\s*(?:and\s*)?\d*\s*(?:minutes?|mins?)?|\d+\s*(?:minutes?|mins?|seconds?|secs?|hours?|hrs?))/gi;function ge(e){const t=e.toLowerCase();let i=0;const r=t.match(/(\d+)\s*h(?:ours?|rs?)?/);r&&(i+=3600*parseInt(r[1]));const a=t.match(/(\d+)\s*m(?:in(?:utes?)?)?(?!\s*l)/);a&&(i+=60*parseInt(a[1]));const n=t.match(/(\d+)\s*s(?:ec(?:onds?)?)?/);if(n&&(i+=parseInt(n[1])),!i){const e=t.match(/^(\d+)$/);e&&(i=60*parseInt(e[1]))}return i||0}const be={oz:{factor:28.3495,to:"g",toFull:"g"},lb:{factor:453.592,to:"g",toFull:"g",thresholdKg:500},cup:{factor:250,to:"ml",toFull:"ml"},cups:{factor:250,to:"ml",toFull:"ml"},"fl oz":{factor:29.5735,to:"ml",toFull:"ml"},pt:{factor:473.176,to:"ml",toFull:"ml"},qt:{factor:946.353,to:"ml",toFull:"ml"}};class ve extends se{static properties={recipe:{type:Object},api:{type:Object},shoppingLists:{type:Array},slmAvailable:{type:Boolean},settings:{type:Object},_editing:{type:Boolean},_editData:{type:Object},_servingMult:{type:Number},_activeTab:{type:String},_showShoppingPicker:{type:Boolean},_selectedListId:{type:String},_checkedIngredients:{type:Object},_shoppingAdding:{type:Boolean},_shoppingResult:{type:String},_confirmDelete:{type:Boolean},_downloading:{type:Boolean},_hoverRating:{type:Number},_photoUrlInput:{type:String},_addingPhotoUrl:{type:Boolean},_metricMode:{type:Boolean},_nutritionExpanded:{type:Boolean},_wakeActive:{type:Boolean},_completedSteps:{type:Object}};constructor(){super(),this.recipe=null,this.api=null,this.shoppingLists=[],this.slmAvailable=!1,this.settings={},this._editing=!1,this._editData={},this._servingMult=1,this._activeTab="ingredients",this._showShoppingPicker=!1,this._selectedListId="",this._checkedIngredients=null,this._shoppingAdding=!1,this._shoppingResult=null,this._confirmDelete=!1,this._downloading=!1,this._hoverRating=0,this._photoUrlInput="",this._addingPhotoUrl=!1,this._metricMode=!1,this._nutritionExpanded=!1,this._wakeActive=!1,this._completedSteps=new Set,this._wakeLockSentinel=null,this._wakeLockTimeout=null}disconnectedCallback(){super.disconnectedCallback(),this._releaseWakeLock()}async _requestWakeLock(){if("wakeLock"in navigator)try{this._wakeLockSentinel=await navigator.wakeLock.request("screen"),this._wakeActive=!0;const e=this.settings?.wakeLockDuration??60;this._wakeLockTimeout=setTimeout(()=>this._releaseWakeLock(),6e4*e)}catch(e){console.warn("Wake Lock failed:",e)}}async _releaseWakeLock(){if(this._wakeLockSentinel){try{await this._wakeLockSentinel.release()}catch{}this._wakeLockSentinel=null}this._wakeActive=!1,this._wakeLockTimeout&&(clearTimeout(this._wakeLockTimeout),this._wakeLockTimeout=null)}updated(e){e.has("recipe")&&this.recipe&&(this._servingMult=1,this._editing=!1,this._confirmDelete=!1,this._shoppingResult=null,this._showShoppingPicker=!1,this._checkedIngredients=null,this._photoUrlInput="",this._metricMode=!1,this._nutritionExpanded=!1,this._completedSteps=new Set),e.has("shoppingLists")&&this.shoppingLists.length&&!this._selectedListId&&(this._selectedListId=this.shoppingLists[0]?.id??"")}_formatTime(e){if(!e)return null;if(e<60)return`${e} min`;const t=Math.floor(e/60),i=e%60;return i?`${t}h ${i}m`:`${t}h`}_scaleAmount(e){if(!e||isNaN(parseFloat(e)))return e;const t=parseFloat(e)*this._servingMult;return Number.isInteger(t)?String(t):t.toFixed(1).replace(/\.0$/,"")}_startEdit(){const e=this.recipe.nutrition||{};this._editData={name:this.recipe.name||"",description:this.recipe.description||"",source_url:this.recipe.source_url||"",servings:this.recipe.servings||"",prep_time:this.recipe.prep_time||"",cook_time:this.recipe.cook_time||"",tags:(this.recipe.tags||[]).join(", "),courses:(this.recipe.courses||[]).join(", "),categories:(this.recipe.categories||[]).join(", "),collections:(this.recipe.collections||[]).join(", "),notes:this.recipe.notes||"",rating:this.recipe.rating||0,cal:e.calories||"",fat:e.fat||"",satf:e.saturated_fat||"",chol:e.cholesterol||"",sod:e.sodium||"",carb:e.carbohydrates||"",fib:e.fiber||"",sug:e.sugar||"",prot:e.protein||""},this._editing=!0}_cancelEdit(){this._editing=!1,this._editData={}}_handleEditField(e,t){this._editData={...this._editData,[e]:t}}async _saveEdit(){const e=this._editData,t=e=>e?e.split(",").map(e=>e.trim()).filter(Boolean):[],i={},r={cal:"calories",fat:"fat",satf:"saturated_fat",chol:"cholesterol",sod:"sodium",carb:"carbohydrates",fib:"fiber",sug:"sugar",prot:"protein"};let n=!1;for(const[t,a]of Object.entries(r))""!==e[t]&&null!=e[t]&&(i[a]=e[t],n=!0);const a={name:e.name,description:e.description,source_url:e.source_url,servings:parseInt(e.servings)||null,prep_time:parseInt(e.prep_time)||null,cook_time:parseInt(e.cook_time)||null,tags:t(e.tags),courses:t(e.courses),categories:t(e.categories),collections:t(e.collections),notes:e.notes,rating:e.rating||null,nutrition:n?i:null};this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:a},bubbles:!0,composed:!0})),this._editing=!1}_handleToggleFav(){this.dispatchEvent(new CustomEvent("rm-toggle-favourite",{detail:{recipeId:this.recipe.id},bubbles:!0,composed:!0}))}async _handleDownloadImage(){if(this.recipe.image_url){this._downloading=!0;try{const e=await this.api.downloadRecipeImage(this.recipe.id,this.recipe.image_url);e?.local_url&&this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:{image_url:e.local_url}},bubbles:!0,composed:!0}))}catch(e){console.warn("Image download failed:",e)}finally{this._downloading=!1}}}_handleDeleteRecipe(){if(!this._confirmDelete)return this._confirmDelete=!0,void setTimeout(()=>{this._confirmDelete=!1},3e3);this.dispatchEvent(new CustomEvent("rm-delete-recipe",{detail:{recipeId:this.recipe.id},bubbles:!0,composed:!0}))}_openShoppingPicker(){this._checkedIngredients=new Set,this._showShoppingPicker=!0}_toggleIngredient(e){const t=new Set(this._checkedIngredients);t.has(e)?t.delete(e):t.add(e),this._checkedIngredients=t}_selectAllIngredients(){const e=this.recipe?.ingredients?.length??0;this._checkedIngredients=new Set([...Array(e).keys()])}_clearAllIngredients(){this._checkedIngredients=new Set}async _handleAddToShopping(){const e=this._checkedIngredients;if(!e?.size)return;const t=(this.recipe.ingredients||[]).filter((t,i)=>e.has(i)).map(e=>({...e,amount:this._scaleAmount(e.amount)}));this._shoppingAdding=!0,this._shoppingResult=null,this.dispatchEvent(new CustomEvent("rm-add-to-shopping",{detail:{ingredients:t,listId:this._selectedListId||null,recipeName:this.recipe.name},bubbles:!0,composed:!0})),await new Promise(e=>setTimeout(e,600)),this._shoppingAdding=!1,this._shoppingResult="success",this._showShoppingPicker=!1,setTimeout(()=>{this._shoppingResult=null},2500)}_fireTimer(e,t){this.dispatchEvent(new CustomEvent("rm-start-timer",{detail:{seconds:e,label:t},bubbles:!0,composed:!0}))}async _handleAddPhotoUrl(){const e=this._photoUrlInput.trim();if(e){this._addingPhotoUrl=!0;try{const t=this.recipe.photos||[],i={photos:[...t,e]};this.recipe.image_url||(i.image_url=e),this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:i},bubbles:!0,composed:!0})),this._photoUrlInput=""}finally{this._addingPhotoUrl=!1}}}_handleCameraCapture(e){const t=e.target.files?.[0];if(!t)return;const i=new FileReader;i.onload=async e=>{const t=e.target.result.split(",")[1];try{const e=await this.api.uploadRecipeImage(this.recipe.id,t);if(e?.image_url||e?.local_url){const t=e.image_url||e.local_url,i={photos:[...this.recipe.photos||[],t]};this.recipe.image_url||(i.image_url=t),this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:i},bubbles:!0,composed:!0}))}}catch(e){console.warn("Camera upload failed:",e)}},i.readAsDataURL(t)}_setMainPhoto(e){this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:{image_url:e}},bubbles:!0,composed:!0}))}_removePhoto(e){const t=(this.recipe.photos||[]).filter(t=>t!==e),i={photos:t};this.recipe.image_url===e&&(i.image_url=t[0]||null),this.dispatchEvent(new CustomEvent("rm-update-recipe",{detail:{recipeId:this.recipe.id,data:i},bubbles:!0,composed:!0}))}_renderChipGroup(e,t,i){return t?.length?U`
       <div class="chip-group">
         <span class="chip-group-label">${e}:</span>
         ${t.map(e=>U`<span class="chip ${i}">${e}</span>`)}
       </div>
-    `:""}render(){if(!this.recipe)return U``;const e=this.recipe,t=e.total_time||(e.prep_time||0)+(e.cook_time||0)||null;return U`
+    `:""}_scrollToPanel(e){const t=this.renderRoot?.querySelector(e);t&&t.scrollIntoView({behavior:"smooth",block:"start"})}_normalizeSectionLabel(e){return String(e||"").trim().replace(/:$/,"")||"Ingredients"}_groupIngredients(e=[]){const t=[];let i={title:"Ingredients",items:[]};return e.forEach((e,r)=>{const n=String(e?.name||"").trim(),a=!e?.amount&&!e?.unit&&/:$/.test(n);if(e?.is_heading||a)return i.items.length&&t.push(i),void(i={title:this._normalizeSectionLabel(n),items:[]});i.items.push({...e,_idx:r})}),i.items.length&&t.push(i),t}_parseNutritionValue(e){if(null==e||""===e)return null;const t=parseFloat(String(e).replace(/[^0-9.\-]/g,""));return Number.isFinite(t)?t:null}_formatNutritionNumber(e){return Number.isFinite(e)?e>=10?String(Math.round(10*e)/10).replace(/\.0$/,""):String(Math.round(100*e)/100).replace(/\.00$/,"").replace(/0$/,""):null}_getNutritionSummary(e){const t=e.nutrition||{},i=this._parseNutritionValue(t.calories)||0,r=this._parseNutritionValue(t.carbohydrates)||0,n=this._parseNutritionValue(t.fat)||0,a=this._parseNutritionValue(t.protein)||0,s=4*r,o=9*n,l=4*a,c=s+o+l||i||0,d=e=>c>0?Math.round(e/c*100):null;return{calories:i,carbs:r,fat:n,protein:a,carbsPct:d(s),fatPct:d(o),proteinPct:d(l),ringStops:{carbEnd:d(s)||0,fatEnd:(d(s)||0)+(d(o)||0)}}}_getNutritionRows(e){const t=e.nutrition||{},i={calories:{max:2e3,unit:"kcal"},carbohydrates:{max:275,unit:"g"},protein:{max:50,unit:"g"},fat:{max:78,unit:"g"},saturated_fat:{max:20,unit:"g"},sugar:{max:50,unit:"g"},fiber:{max:28,unit:"g"},cholesterol:{max:300,unit:"mg"},sodium:{max:2300,unit:"mg"}};return[["calories","Calories"],["carbohydrates","Carbs"],["protein","Protein"],["fat","Total fat"],["saturated_fat","Saturated fat"],["sugar","Sugars"],["fiber","Fiber"],["cholesterol","Cholesterol"],["sodium","Sodium"]].map(([e,r])=>{const n=this._parseNutritionValue(t[e]);if(null==n)return null;const a=i[e],s=a?.max?Math.max(0,Math.round(n/a.max*100)):null;return{key:e,label:r,value:this._formatNutritionNumber(n),unit:a?.unit||"",pct:s}}).filter(Boolean)}render(){if(!this.recipe)return U``;const e=this.recipe,t=e.total_time||(e.prep_time||0)+(e.cook_time||0)||null;return U`
       <div class="detail-container">
-        <!-- Hero image -->
-        <div class="hero ${e.image_url?"":"no-image"}">
-          ${e.image_url?U`
-            <img src="${e.image_url}" alt="${e.name}" />
-            <div class="hero-overlay"></div>
-          `:U`
-            <div class="hero-placeholder">
-              <ha-icon icon="mdi:food"></ha-icon>
-            </div>
-          `}
-          <div class="hero-actions">
-            <button class="hero-btn ${e.is_favourite?"fav-active":""}" @click=${this._handleToggleFav}
-              title="${e.is_favourite?"Remove from favourites":"Add to favourites"}">
-              <ha-icon icon="${e.is_favourite?"mdi:heart":"mdi:heart-outline"}"></ha-icon>
-            </button>
-            ${e.source_url?U`
-              <a class="hero-btn" href="${e.source_url}" target="_blank" rel="noopener" title="Open source">
-                <ha-icon icon="mdi:open-in-new"></ha-icon>
-              </a>
-            `:""}
-            <button class="hero-btn" @click=${this._startEdit} title="Edit">
-              <ha-icon icon="mdi:pencil-outline"></ha-icon>
-            </button>
-            <button class="hero-btn delete-btn ${this._confirmDelete?"confirm":""}" @click=${this._handleDeleteRecipe}
-              title="${this._confirmDelete?"Confirm delete":"Delete recipe"}">
-              <ha-icon icon="${this._confirmDelete?"mdi:check":"mdi:trash-can-outline"}"></ha-icon>
-            </button>
-          </div>
-        </div>
-
         <div class="detail-scroll">
-          <!-- Recipe meta (description, times, tags — name is shown in parent header) -->
-          <div class="detail-head">
-            ${e.description?U`<p class="detail-desc">${e.description}</p>`:""}
-
-            <div class="meta-row">
-              ${e.prep_time?U`
-                <div class="meta-item">
-                  <span class="meta-label">Prep</span>
-                  <span class="meta-val">${this._formatTime(e.prep_time)}</span>
+          <section class="top-layout">
+            <div class="hero ${e.image_url?"":"no-image"}">
+              ${e.image_url?U`
+                <img src="${e.image_url}" alt="${e.name}" />
+                <div class="hero-overlay"></div>
+              `:U`
+                <div class="hero-placeholder">
+                  <ha-icon icon="mdi:food"></ha-icon>
                 </div>
-              `:""}
-              ${e.cook_time?U`
-                <div class="meta-item">
-                  <span class="meta-label">Cook</span>
-                  <span class="meta-val">${this._formatTime(e.cook_time)}</span>
-                </div>
-              `:""}
-              ${t?U`
-                <div class="meta-item">
-                  <span class="meta-label">Total</span>
-                  <span class="meta-val">${this._formatTime(t)}</span>
-                </div>
-              `:""}
-              ${e.servings?U`
-                <div class="meta-item">
-                  <span class="meta-label">Serves</span>
-                  <span class="meta-val">${e.servings_text||e.servings}</span>
-                </div>
-              `:""}
+              `}
+              <div class="hero-actions">
+                <button class="hero-btn ${e.is_favourite?"fav-active":""}" @click=${this._handleToggleFav}
+                  title="${e.is_favourite?"Remove from favourites":"Add to favourites"}">
+                  <ha-icon icon="${e.is_favourite?"mdi:heart":"mdi:heart-outline"}"></ha-icon>
+                </button>
+                ${e.source_url?U`
+                  <a class="hero-btn" href="${e.source_url}" target="_blank" rel="noopener" title="Open source">
+                    <ha-icon icon="mdi:open-in-new"></ha-icon>
+                  </a>
+                `:""}
+                <button class="hero-btn" @click=${this._startEdit} title="Edit">
+                  <ha-icon icon="mdi:pencil-outline"></ha-icon>
+                </button>
+                <button class="hero-btn delete-btn ${this._confirmDelete?"confirm":""}" @click=${this._handleDeleteRecipe}
+                  title="${this._confirmDelete?"Confirm delete":"Delete recipe"}">
+                  <ha-icon icon="${this._confirmDelete?"mdi:check":"mdi:trash-can-outline"}"></ha-icon>
+                </button>
+              </div>
             </div>
 
-            ${e.tags?.length?U`
-              <div class="tags-row">
-                ${e.tags.map(e=>U`<span class="tag-chip">${e}</span>`)}
-              </div>
-            `:""}
+            <div class="summary-card">
+              <h2 class="summary-title">${e.name}</h2>
+              ${e.description?U`<p class="detail-desc">${e.description}</p>`:""}
 
-            ${this._renderChipGroup("Courses",e.courses,"chip-course")}
-            ${this._renderChipGroup("Categories",e.categories,"chip-category")}
-            ${this._renderChipGroup("Collections",e.collections,"chip-collection")}
-          </div>
+              <div class="summary-actions">
+                <button class="summary-action" @click=${()=>this._scrollToPanel(".directions-panel")} title="Jump to directions">
+                  <ha-icon icon="mdi:chef-hat"></ha-icon><span>Cook</span>
+                </button>
+                <button class="summary-action" @click=${()=>{this._openShoppingPicker(),this._scrollToPanel(".ingredients-panel")}} title="Add ingredients to shopping list">
+                  <ha-icon icon="mdi:cart-plus"></ha-icon><span>Shop</span>
+                </button>
+                <button class="summary-action" @click=${()=>window.print()} title="Print recipe">
+                  <ha-icon icon="mdi:printer-outline"></ha-icon><span>Print</span>
+                </button>
+                <button class="summary-action" @click=${this._startEdit} title="Edit recipe">
+                  <ha-icon icon="mdi:pencil-outline"></ha-icon><span>Edit</span>
+                </button>
+              </div>
+
+              <div class="meta-row">
+                ${e.prep_time?U`
+                  <div class="meta-item">
+                    <span class="meta-label">Prep</span>
+                    <span class="meta-val">${this._formatTime(e.prep_time)}</span>
+                  </div>
+                `:""}
+                ${e.cook_time?U`
+                  <div class="meta-item">
+                    <span class="meta-label">Cook</span>
+                    <span class="meta-val">${this._formatTime(e.cook_time)}</span>
+                  </div>
+                `:""}
+                ${t?U`
+                  <div class="meta-item">
+                    <span class="meta-label">Total</span>
+                    <span class="meta-val">${this._formatTime(t)}</span>
+                  </div>
+                `:""}
+                ${e.servings?U`
+                  <div class="meta-item">
+                    <span class="meta-label">Serves</span>
+                    <span class="meta-val">${e.servings_text||e.servings}</span>
+                  </div>
+                `:""}
+              </div>
+
+              ${e.tags?.length?U`
+                <div class="tags-row">
+                  ${e.tags.map(e=>U`<span class="tag-chip">${e}</span>`)}
+                </div>
+              `:""}
+
+              ${this._renderChipGroup("Courses",e.courses,"chip-course")}
+              ${this._renderChipGroup("Categories",e.categories,"chip-category")}
+              ${this._renderChipGroup("Collections",e.collections,"chip-collection")}
+            </div>
+          </section>
 
           <!-- Serving scaler -->
           ${e.servings?U`
@@ -556,42 +572,48 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
             </div>
           `:""}
 
-          <!-- Tabs -->
-          <div class="tabs-row">
-            ${[["ingredients","Ingredients"],["directions","Directions"],["notes","Notes"],["nutrition","Nutrition"],["photos","Photos"]].map(([e,t])=>U`
-              <button
-                class="tab-btn ${this._activeTab===e?"active":""}"
-                @click=${()=>{this._activeTab=e}}
-              >${t}</button>
-            `)}
+          <div class="detail-grid">
+            <section class="panel-card ingredients-panel">
+              <div class="panel-heading">
+                <h3>Ingredients</h3>
+              </div>
+              ${this._renderIngredients(e)}
+              ${this._renderNutrition(e)}
+            </section>
+
+            <section class="panel-card directions-panel">
+              <div class="panel-heading">
+                <h3>Directions</h3>
+                ${this.settings?.keepScreenOn?U`
+                  <button class="wakelock-btn ${this._wakeActive?"active":""}"
+                    @click=${()=>this._wakeActive?this._releaseWakeLock():this._requestWakeLock()}
+                    title="${this._wakeActive?"Release screen lock":"Keep screen on"}">
+                    <ha-icon icon="${this._wakeActive?"mdi:eye":"mdi:eye-off-outline"}"></ha-icon>
+                    ${this._wakeActive?"Screen on":"Keep screen on"}
+                  </button>
+                `:""}
+              </div>
+              ${this._renderDirections(e)}
+            </section>
           </div>
 
-          <!-- Wake lock button (shown when setting enabled) -->
-          ${this.settings?.keepScreenOn?U`
-            <div class="wakelock-row">
-              <button class="wakelock-btn ${this._wakeActive?"active":""}"
-                @click=${()=>this._wakeActive?this._releaseWakeLock():this._requestWakeLock()}
-                title="${this._wakeActive?"Release screen lock":"Keep screen on"}">
-                <ha-icon icon="${this._wakeActive?"mdi:eye":"mdi:eye-off-outline"}"></ha-icon>
-                ${this._wakeActive?"Screen on":"Keep screen on"}
-              </button>
-            </div>
+          ${e.notes?U`
+            <section class="panel-card notes-panel">
+              <div class="panel-heading"><h3>Notes</h3></div>
+              ${this._renderNotes(e)}
+            </section>
           `:""}
 
-          <!-- Tab content -->
-          <div class="tab-content">
-            ${"ingredients"===this._activeTab?this._renderIngredients(e):""}
-            ${"directions"===this._activeTab?this._renderDirections(e):""}
-            ${"notes"===this._activeTab?this._renderNotes(e):""}
-            ${"nutrition"===this._activeTab?this._renderNutrition(e):""}
-            ${"photos"===this._activeTab?this._renderPhotos(e):""}
-          </div>
+          <section class="panel-card photos-panel">
+            <div class="panel-heading"><h3>Photos</h3></div>
+            ${this._renderPhotos(e)}
+          </section>
         </div>
 
         <!-- Edit panel (inline overlay) -->
         ${this._editing?this._renderEditPanel():""}
       </div>
-    `}_getDisplayAmount(e){if(this._metricMode){const t=function(e,t){if(!e||!t)return null;const i=parseFloat(e);if(isNaN(i))return null;const r=t.toLowerCase().trim(),a=be[r];if(!a)return null;let n=i*a.factor,s=a.to;"lb"===r&&n>=500&&(n/=1e3,s="kg"),"ml"===s&&n>=1e3&&(n/=1e3,s="L");const o=n>=10?Math.round(n):Math.round(10*n)/10;return{amount:String(o),unit:s}}(this._scaleAmount(e.amount),e.unit);if(t)return t}return{amount:this._scaleAmount(e.amount)||"",unit:e.unit||""}}_renderIngredients(e){const t=this._showShoppingPicker,i=this._checkedIngredients,r=i?.size??0,a=(e.ingredients||[]).some(e=>e.unit&&be[e.unit.toLowerCase().trim()]);return U`
+    `}_getDisplayAmount(e){if(this._metricMode){const t=function(e,t){if(!e||!t)return null;const i=parseFloat(e);if(isNaN(i))return null;const r=t.toLowerCase().trim(),n=be[r];if(!n)return null;let a=i*n.factor,s=n.to;"lb"===r&&a>=500&&(a/=1e3,s="kg"),"ml"===s&&a>=1e3&&(a/=1e3,s="L");const o=a>=10?Math.round(a):Math.round(10*a)/10;return{amount:String(o),unit:s}}(this._scaleAmount(e.amount),e.unit);if(t)return t}return{amount:this._scaleAmount(e.amount)||"",unit:e.unit||""}}_renderIngredients(e){const t=this._showShoppingPicker,i=this._checkedIngredients,r=i?.size??0,n=this._groupIngredients(e.ingredients||[]),a=(e.ingredients||[]).some(e=>e.unit&&be[e.unit.toLowerCase().trim()]);return U`
       ${this.settings?.showUnitConversion&&a?U`
         <div class="metric-toggle-row">
           <button class="metric-btn ${this._metricMode?"active":""}"
@@ -602,21 +624,28 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
         </div>
       `:""}
 
-      ${e.ingredients?.length?U`
-        <ul class="ingredient-list">
-          ${e.ingredients.map((e,r)=>{if(e.is_heading)return U`<li class="ing-heading">${e.name}</li>`;const{amount:a,unit:n}=this._getDisplayAmount(e);return U`
-              <li class="ingredient-item ${t?"selectable":""}"
-                @click=${t?()=>this._toggleIngredient(r):void 0}>
-                ${t?U`
-                  <span class="ing-check ${i?.has(r)?"checked":""}">
-                    ${i?.has(r)?U`<ha-icon icon="mdi:check"></ha-icon>`:""}
-                  </span>
-                `:""}
-                <span class="ing-amount">${a} ${n}</span>
-                <span class="ing-name">${e.name}${e.notes?U` <em class="ing-notes">(${e.notes})</em>`:""}</span>
-              </li>
-            `})}
-        </ul>
+      ${n.length?U`
+        <div class="ingredient-groups">
+          ${n.map(e=>U`
+            <section class="ingredient-group-card">
+              <h4 class="ingredient-group-title">${e.title}</h4>
+              <ul class="ingredient-list">
+                ${e.items.map(e=>{const{amount:r,unit:n}=this._getDisplayAmount(e);return U`
+                    <li class="ingredient-item ${t?"selectable":""}"
+                      @click=${t?()=>this._toggleIngredient(e._idx):void 0}>
+                      ${t?U`
+                        <span class="ing-check ${i?.has(e._idx)?"checked":""}">
+                          ${i?.has(e._idx)?U`<ha-icon icon="mdi:check"></ha-icon>`:""}
+                        </span>
+                      `:""}
+                      <span class="ing-amount">${[r,n].filter(Boolean).join(" ")||" "}</span>
+                      <span class="ing-name">${e.name}${e.notes?U` <em class="ing-notes">(${e.notes})</em>`:""}</span>
+                    </li>
+                  `})}
+              </ul>
+            </section>
+          `)}
+        </div>
       `:U`<p class="empty-tab">No ingredients listed.</p>`}
 
       <!-- Shopping section (always shown) -->
@@ -670,26 +699,65 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
             </li>
           `})}
       </ol>
-    `:U`<p class="empty-tab">No directions listed.</p>`}_renderStepWithTimers(e){const t=[];let i,r=0;for(fe.lastIndex=0;null!==(i=fe.exec(e));){i.index>r&&t.push(e.slice(r,i.index));const a=i[0],n=ge(a);n>0?t.push(U`<button class="time-chip" @click=${e=>{e.stopPropagation(),this._fireTimer(n,a)}} title="Start timer for ${a}">
-          <ha-icon icon="mdi:timer-outline"></ha-icon>${a}
-        </button>`):t.push(a),r=i.index+i[0].length}return r<e.length&&t.push(e.slice(r)),t}_renderNotes(e){return U`
+    `:U`<p class="empty-tab">No directions listed.</p>`}_renderStepWithTimers(e){const t=[];let i,r=0;for(fe.lastIndex=0;null!==(i=fe.exec(e));){i.index>r&&t.push(e.slice(r,i.index));const n=i[0],a=ge(n);a>0?t.push(U`<button class="time-chip" @click=${e=>{e.stopPropagation(),this._fireTimer(a,n)}} title="Start timer for ${n}">
+          <ha-icon icon="mdi:timer-outline"></ha-icon>${n}
+        </button>`):t.push(n),r=i.index+i[0].length}return r<e.length&&t.push(e.slice(r)),t}_renderNotes(e){return U`
       ${e.notes?U`<p class="notes-text">${e.notes}</p>`:U`<p class="empty-tab">No notes.</p>`}
-    `}_renderNutrition(e){const t=e.nutrition||{},i=me.some(e=>null!=t[e.key]&&""!==t[e.key]);if(!i)return U`
-        <div class="empty-tab">
-          <p>No nutrition info. Add it via the edit panel.</p>
-        </div>
-      `;const r=e.servings?`Per serving (${e.servings_text||e.servings})`:"Per serving";return U`
-      <div class="nutrition-panel">
-        <div class="nutr-header">Nutrition Facts</div>
-        <div class="nutr-sub">${r}</div>
-        <div class="nutr-divider thick"></div>
-        ${me.map(e=>{const i=t[e.key];return null==i||""===i?"":U`
-            <div class="nutr-row ${e.bold?"nutr-bold":""} ${e.indent?"nutr-indent":""}">
-              <span class="nutr-label">${e.label}</span>
-              <span class="nutr-val">${i}${"kcal"!==e.unit?U`<em> ${e.unit}</em>`:""}</span>
+    `}_renderNutrition(e){const t=e.nutrition||{},i=me.some(e=>null!=t[e.key]&&""!==t[e.key]);if(!i)return"";const r=this._getNutritionSummary(e),n=this._getNutritionRows(e),a=e.servings_text||e.servings||1,s=Math.min(r.ringStops.carbEnd,100),o=Math.min(r.ringStops.fatEnd,100);return U`
+      <div class="nutrition-card">
+        <div class="nutrition-summary">
+          <div class="macro-ring" style="${`background: conic-gradient(\n      var(--rm-nutr-carb, #3ea0ff) 0 ${s}%,\n      var(--rm-nutr-fat, #f4c04b) ${s}% ${o}%,\n      var(--rm-nutr-protein, #8b5cf6) ${o}% 100%\n    );`}">
+            <div class="macro-ring-center">
+              <strong>${this._formatNutritionNumber(r.calories)||"0"}</strong>
+              <span>cals</span>
             </div>
-            <div class="nutr-divider"></div>
-          `})}
+          </div>
+          <div class="macro-stat-list">
+            <div class="macro-stat">
+              <strong>${this._formatNutritionNumber(r.carbs)||"0"} g</strong>
+              <span>Carbs</span>
+              <em>${null!=r.carbsPct?`${r.carbsPct}% cals`:""}</em>
+            </div>
+            <div class="macro-stat">
+              <strong>${this._formatNutritionNumber(r.fat)||"0"} g</strong>
+              <span>Total fat</span>
+              <em>${null!=r.fatPct?`${r.fatPct}% cals`:""}</em>
+            </div>
+            <div class="macro-stat">
+              <strong>${this._formatNutritionNumber(r.protein)||"0"} g</strong>
+              <span>Protein</span>
+              <em>${null!=r.proteinPct?`${r.proteinPct}% cals`:""}</em>
+            </div>
+          </div>
+        </div>
+
+        <button class="nutrition-toggle" @click=${()=>{this._nutritionExpanded=!this._nutritionExpanded}}>
+          <span>Daily RDA Nutrition</span>
+          <span class="nutrition-serving">${a}</span>
+          <ha-icon icon="${this._nutritionExpanded?"mdi:chevron-up":"mdi:chevron-down"}"></ha-icon>
+        </button>
+
+        ${this._nutritionExpanded?U`
+          <div class="nutrition-details">
+            <div class="nutrition-row servings-row">
+              <span>Servings</span>
+              <strong>${a}</strong>
+            </div>
+            ${n.map(e=>U`
+              <div class="nutrition-row">
+                <div class="nutrition-row-top">
+                  <span>${e.label}</span>
+                  <strong>${e.value} ${e.unit}${null!=e.pct?U` <em>(${e.pct}%)</em>`:""}</strong>
+                </div>
+                ${null!=e.pct?U`
+                  <div class="nutrition-bar">
+                    <span style="width: ${Math.min(e.pct,100)}%"></span>
+                  </div>
+                `:""}
+              </div>
+            `)}
+          </div>
+        `:""}
       </div>
     `}_renderPhotos(e){const t=e.photos||[],i=e.image_url,r=i?[i,...t.filter(e=>e!==i)]:t;return U`
       <div class="photos-tab">
@@ -732,12 +800,20 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
               Add
             </button>
           </div>
-          <label class="camera-btn">
-            <ha-icon icon="mdi:camera-plus-outline"></ha-icon>
-            Take / Upload Photo
-            <input type="file" accept="image/*" capture="environment" class="camera-input"
-              @change=${this._handleCameraCapture} />
-          </label>
+          <div class="camera-btns">
+            <label class="camera-btn-split">
+              <ha-icon icon="mdi:camera"></ha-icon>
+              <span>Take Photo</span>
+              <input type="file" accept="image/*" capture="environment" class="camera-input"
+                @change=${this._handleCameraCapture} />
+            </label>
+            <label class="camera-btn-split">
+              <ha-icon icon="mdi:image-multiple-outline"></ha-icon>
+              <span>Choose from Library</span>
+              <input type="file" accept="image/*" class="camera-input"
+                @change=${this._handleCameraCapture} />
+            </label>
+          </div>
         </div>
       </div>
     `}_renderEditPanel(){const e=this._editData;return U`
@@ -820,7 +896,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
           @input=${e=>this._handleEditField(t,e.target.value)}
         />
       </div>
-    `}static styles=n`
+    `}static styles=a`
     :host { display: block; height: 100%; }
 
     .detail-container {
@@ -831,13 +907,29 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       overflow: hidden;
     }
 
+    .detail-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 16px 24px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--rm-border, rgba(255,255,255,0.08)) transparent;
+    }
+
+    .top-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
     /* Hero */
     .hero {
-      flex-shrink: 0;
-      height: 180px;
+      height: 240px;
       position: relative;
-      background: var(--rm-surface, #2c2c2e);
+      background: var(--rm-bg-elevated, #2c2c2e);
       overflow: hidden;
+      border-radius: var(--rm-radius, 12px);
+      border: 1px solid var(--rm-border, rgba(255,255,255,0.08));
     }
     .hero.no-image { height: 80px; }
     .hero img { width: 100%; height: 100%; object-fit: cover; }
@@ -882,21 +974,82 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     .hero-btn.fav-active { color: var(--error-color, #cf6679); }
     .hero-btn.delete-btn.confirm { background: var(--error-color, #cf6679); color: #fff; }
 
-    /* Scroll area */
-    .detail-scroll {
-      flex: 1;
-      overflow-y: auto;
-      padding: 14px 16px 24px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--rm-border, rgba(255,255,255,0.08)) transparent;
+    .summary-card {
+      background: linear-gradient(160deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid var(--rm-border, rgba(255,255,255,0.08));
+      border-radius: var(--rm-radius, 12px);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    .detail-head { margin-bottom: 12px; }
+    .summary-title {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.1;
+      color: var(--rm-text, #e5e5ea);
+      font-family: "Georgia", "Times New Roman", serif;
+      letter-spacing: 0.01em;
+      text-wrap: balance;
+    }
+
+    .summary-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .summary-action {
+      border: 1px solid var(--rm-border, rgba(255,255,255,0.12));
+      background: var(--rm-bg-elevated, #2c2c2e);
+      color: var(--rm-text, #e5e5ea);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .summary-action:hover { background: var(--rm-accent-soft); border-color: var(--rm-accent); }
+    .summary-action ha-icon { --mdc-icon-size: 15px; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel-card {
+      background: linear-gradient(165deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid var(--rm-border, rgba(255,255,255,0.08));
+      border-radius: var(--rm-radius, 12px);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .panel-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .panel-heading h3 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1;
+      color: var(--rm-text, #e5e5ea);
+      font-family: "Georgia", "Times New Roman", serif;
+    }
+
     .detail-desc {
       margin: 0 0 8px;
-      font-size: 14px;
+      font-size: 16px;
       color: var(--rm-text-secondary, #8e8e93);
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     .meta-row {
@@ -1042,13 +1195,23 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       border-color: var(--rm-accent);
     }
 
-    /* Ingredient section heading */
-    .ing-heading {
-      list-style: none;
-      font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--rm-accent); padding: 10px 0 4px;
-      margin-top: 6px;
+    .ingredient-groups {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ingredient-group-card {
+      border: 1px solid var(--rm-border, rgba(255,255,255,0.08));
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      padding: 12px 12px 4px;
+    }
+    .ingredient-group-title {
+      margin: 0 0 8px;
+      font-size: 18px;
+      color: var(--rm-text, #e5e5ea);
+      font-family: "Georgia", "Times New Roman", serif;
+      letter-spacing: 0.01em;
     }
 
     /* Ingredients */
@@ -1057,15 +1220,15 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       display: flex;
       gap: 10px;
       align-items: baseline;
-      padding: 10px 0;
+      padding: 11px 0;
       border-bottom: 1px solid var(--rm-border, rgba(255,255,255,0.06));
     }
     .ingredient-item:last-child { border-bottom: none; }
     .ing-amount {
       font-size: 14px;
       font-weight: 700;
-      color: var(--rm-accent, #ff6b35);
-      min-width: 70px;
+      color: var(--rm-text, #e5e5ea);
+      min-width: 92px;
       flex-shrink: 0;
     }
     .ing-name { font-size: 15px; color: var(--rm-text, #e5e5ea); }
@@ -1148,19 +1311,23 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     .step-item {
       display: flex;
       gap: 14px;
-      margin-bottom: 20px;
-      align-items: flex-start;
+      margin-bottom: 10px;
+      align-items: center;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--rm-border, rgba(255,255,255,0.08));
+      border-radius: 10px;
+      padding: 12px 10px;
     }
     .step-num {
       flex-shrink: 0;
-      width: 30px;
-      height: 30px;
-      background: var(--rm-accent, #ff6b35);
+      width: 28px;
+      height: 28px;
+      background: #2f9cff;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       color: #fff;
       cursor: pointer;
@@ -1217,39 +1384,175 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     .empty-tab p { margin: 0; }
 
     /* Nutrition */
-    .nutrition-panel {
-      max-width: 340px;
-      border: 2px solid var(--rm-text, #e5e5ea);
-      border-radius: 4px;
-      padding: 8px 12px;
-      margin: 0 auto;
+    .nutrition-card {
+      margin-top: 12px;
+      border: 1px solid var(--rm-border, rgba(255,255,255,0.08));
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      padding: 12px;
     }
-    .nutr-header {
-      font-size: 28px;
-      font-weight: 900;
-      color: var(--rm-text, #e5e5ea);
+    .nutrition-summary {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .macro-ring {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .macro-ring-center {
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      background: var(--rm-bg-surface, #1c1c1e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
       line-height: 1;
-      margin-bottom: 2px;
     }
-    .nutr-sub {
+    .macro-ring-center strong {
+      font-size: 22px;
+      color: var(--rm-text, #e5e5ea);
+      font-weight: 800;
+    }
+    .macro-ring-center span {
       font-size: 11px;
       color: var(--rm-text-secondary, #8e8e93);
-      margin-bottom: 6px;
+      margin-top: 4px;
     }
-    .nutr-divider { border-top: 1px solid var(--rm-border, rgba(255,255,255,0.15)); margin: 2px 0; }
-    .nutr-divider.thick { border-top: 6px solid var(--rm-text, #e5e5ea); margin: 4px 0; }
-    .nutr-row {
+
+    .macro-stat-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(78px, 1fr));
+      gap: 10px;
+      flex: 1;
+      min-width: 220px;
+    }
+    .macro-stat strong {
+      display: block;
+      font-size: 20px;
+      color: var(--rm-text, #e5e5ea);
+      line-height: 1.2;
+    }
+    .macro-stat span {
+      display: block;
+      font-size: 13px;
+      color: var(--rm-text-secondary, #8e8e93);
+    }
+    .macro-stat em {
+      display: block;
+      margin-top: 4px;
+      font-style: normal;
+      font-size: 12px;
+      color: var(--rm-accent, #58a6ff);
+    }
+
+    .nutrition-toggle {
+      margin-top: 12px;
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--rm-text, #e5e5ea);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 8px 0 2px;
+      font-size: 16px;
+      text-align: left;
+    }
+    .nutrition-toggle ha-icon {
+      margin-left: auto;
+      --mdc-icon-size: 20px;
+      color: var(--rm-text-secondary, #8e8e93);
+    }
+    .nutrition-serving {
+      margin-left: auto;
+      color: var(--rm-text-secondary, #8e8e93);
+    }
+
+    .nutrition-details {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .nutrition-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .nutrition-row-top {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      padding: 2px 0;
-      font-size: 13px;
+      gap: 8px;
+      font-size: 14px;
       color: var(--rm-text, #e5e5ea);
     }
-    .nutr-bold { font-weight: 700; font-size: 15px; }
-    .nutr-indent { padding-left: 14px; font-size: 12px; }
-    .nutr-val { font-weight: 600; white-space: nowrap; }
-    .nutr-val em { font-style: normal; font-size: 11px; color: var(--rm-text-secondary, #8e8e93); }
+    .nutrition-row-top strong {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .nutrition-row-top em {
+      font-style: normal;
+      color: var(--rm-text-secondary, #8e8e93);
+      font-weight: 500;
+    }
+    .nutrition-bar {
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+    .nutrition-bar span {
+      display: block;
+      height: 100%;
+      background: #4aa7ff;
+    }
+    .servings-row {
+      border-bottom: 1px solid var(--rm-border, rgba(255,255,255,0.08));
+      padding-bottom: 8px;
+      margin-bottom: 2px;
+    }
+
+    @media (min-width: 960px) {
+      .top-layout {
+        grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+      }
+      .hero { height: 330px; }
+      .detail-grid {
+        grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+      }
+      .notes-panel,
+      .photos-panel {
+        margin-top: 14px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .detail-scroll {
+        padding: 10px 10px 18px;
+      }
+      .summary-title { font-size: 24px; }
+      .panel-heading h3 { font-size: 21px; }
+      .summary-action span { display: none; }
+      .summary-action { padding: 8px; }
+      .macro-stat-list {
+        grid-template-columns: repeat(3, minmax(66px, 1fr));
+        min-width: 0;
+      }
+      .macro-stat strong { font-size: 18px; }
+      .macro-stat span { font-size: 12px; }
+      .macro-stat em { font-size: 11px; }
+      .nutrition-toggle { font-size: 15px; }
+      .ing-amount { min-width: 75px; }
+    }
 
     /* Photos tab */
     .photos-tab { display: flex; flex-direction: column; gap: 16px; }
@@ -1323,21 +1626,29 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       font-size: 13px;
     }
     .photo-url-input:focus { outline: none; border-color: var(--rm-accent, #ff6b35); }
-    .camera-btn {
-      display: inline-flex;
+    .camera-btns {
+      display: flex;
+      gap: 10px;
+    }
+    .camera-btn-split {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 8px;
       background: var(--rm-bg-elevated, #2c2c2e);
-      border: 1px dashed var(--rm-border, rgba(255,255,255,0.2));
-      border-radius: 8px;
-      color: var(--rm-text-secondary, #8e8e93);
-      padding: 10px 14px;
+      border: 2px solid var(--rm-accent, #ff6b35);
+      border-radius: 10px;
+      color: var(--rm-text, #e5e5ea);
+      padding: 16px 8px;
       cursor: pointer;
-      font-size: 13px;
-      transition: border-color 0.15s, color 0.15s;
+      font-size: 12px;
+      text-align: center;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .camera-btn:hover { border-color: var(--rm-accent, #ff6b35); color: var(--rm-text); }
-    .camera-btn ha-icon { --mdc-icon-size: 20px; color: var(--rm-accent, #ff6b35); }
+    .camera-btn-split:hover { background: var(--rm-accent-soft, rgba(255,107,53,0.12)); }
+    .camera-btn-split ha-icon { --mdc-icon-size: 28px; color: var(--rm-accent, #ff6b35); }
     .camera-input { display: none; }
 
     /* Buttons */
