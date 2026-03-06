@@ -735,7 +735,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
           <ha-icon icon="mdi:timer-outline"></ha-icon>${n}
         </button>`):t.push(n),r=i.index+i[0].length}return r<e.length&&t.push(e.slice(r)),t}_renderNotes(e){return U`
       ${e.notes?U`<p class="notes-text">${e.notes}</p>`:U`<p class="empty-tab">No notes.</p>`}
-    `}_renderNutrition(e){const t=e.nutrition||{},i=me.some(e=>null!=t[e.key]&&""!==t[e.key]);if(!i)return"";const r=this._getNutritionSummary(e),n=this._getNutritionRows(e),a=e.servings_text||e.servings||1,s=Math.min(r.ringStops.carbEnd,100),o=Math.min(r.ringStops.fatEnd,100);return U`
+    `}_renderNutrition(e){const r=this._getNutritionSummary(e),n=this._getNutritionRows(e),a=e.servings_text||e.servings||1,s=Math.min(r.ringStops.carbEnd,100),o=Math.min(r.ringStops.fatEnd,100);return U`
       <div class="nutrition-card">
         <div class="nutrition-summary">
           <div class="macro-ring" style="${`background: conic-gradient(\n      var(--rm-nutr-carb, #3ea0ff) 0 ${s}%,\n      var(--rm-nutr-fat, #f4c04b) ${s}% ${o}%,\n      var(--rm-nutr-protein, #8b5cf6) ${o}% 100%\n    );`}">
