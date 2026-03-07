@@ -133,21 +133,11 @@ async def websocket_add_recipe(hass, connection, msg):
     storage = get_storage(hass)
     data = {k: v for k, v in msg.items() if k not in ("id", "type")}
 
-    # Optionally download and localise the image
-    if msg.get("download_image") and data.get("image_url"):
-        local_url = await storage.download_and_save_image(
-            data["image_url"], "tmp_" + data["name"][:20].replace(" ", "_")
-        )
-        if local_url:
-            data["image_url"] = local_url
-
     recipe = await storage.add_recipe(data)
 
-    # Re-save with correct ID-based image filename
-    if msg.get("download_image") and recipe.image_url and recipe.image_url.startswith("/local"):
-        local_url = await storage.download_and_save_image(
-            msg.get("image_url", recipe.image_url), recipe.id
-        )
+    # Download and localise the image now that we have the recipe UUID
+    if msg.get("download_image") and data.get("image_url"):
+        local_url = await storage.download_and_save_image(data["image_url"], recipe.id)
         if local_url:
             await storage.update_recipe(recipe.id, {"image_url": local_url})
             recipe = storage.get_recipe(recipe.id)
