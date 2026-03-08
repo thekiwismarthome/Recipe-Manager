@@ -3905,7 +3905,7 @@ const C=globalThis,A=t=>t,I=C.trustedTypes,S=I?I.createPolicy("lit-html",{create
             <div class="item-content full-width">
               <div class="item-title">Tiles Per Row</div>
               <div class="tile-options">
-                ${(this.isEmbedded?[2,3,4,5,8,10]:[2,3,4,5]).map(t=>z`
+                ${[2,3,4,5,8,10].map(t=>z`
                   <button
                     class="tile-option ${this.settings.tilesPerRow===t?"selected":""}"
                     @click=${()=>this.handleSettingChange("tilesPerRow",t)}
