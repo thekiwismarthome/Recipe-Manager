@@ -3534,6 +3534,16 @@ const A=globalThis,C=e=>e,T=A.trustedTypes,E=T?T.createPolicy("lit-html",{create
       font-size: var(--rm-font-size-base);
     }
 
+    ha-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      position: relative;
+      background: var(--rm-bg-surface);
+    }
     ha-card.rm-card {
       background: var(--rm-bg-main);
       border-radius: 0;
