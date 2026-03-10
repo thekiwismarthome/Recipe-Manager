@@ -22,9 +22,14 @@ class Ingredient:
     amount: Optional[str] = None
     unit: Optional[str] = None
     notes: Optional[str] = None
+    is_heading: Optional[bool] = None  # True = section header (displayed without quantity)
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        # Omit is_heading when falsy to keep storage lean
+        if not d.get("is_heading"):
+            d.pop("is_heading", None)
+        return d
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Ingredient":
@@ -33,6 +38,7 @@ class Ingredient:
             amount=data.get("amount"),
             unit=data.get("unit"),
             notes=data.get("notes"),
+            is_heading=data.get("is_heading") or None,
         )
 
 
