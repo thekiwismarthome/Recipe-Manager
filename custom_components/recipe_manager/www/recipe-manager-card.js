@@ -598,7 +598,10 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
         -->
         <div class="wide-layout">
 
-          <!-- row 1 col 1: square image card (padding-top:100% inner wrapper forces square) -->
+          <!-- row 1: image (1/3) + info card (2/3) -->
+          <div class="wide-row">
+
+          <!-- col 1: square image card (padding-top:100% inner wrapper forces square) -->
           <div class="wide-image-card">
             <div class="wide-image-square">
               ${e.image_url?U`
@@ -611,7 +614,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
             </div>
           </div>
 
-          <!-- row 1 col 2: info card, same height as image -->
+          <!-- col 2: info card -->
           <div class="wide-info-card">
             <h1 class="wide-title">${e.name}</h1>
             ${this._renderQuickRating(e)}
@@ -621,7 +624,12 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
             ${this._renderChipGroups(e)}
           </div>
 
-          <!-- row 2 col 1: ingredients column -->
+          </div><!-- end wide-row 1 -->
+
+          <!-- row 2: ingredients (1/3) + directions (2/3) -->
+          <div class="wide-row">
+
+          <!-- col 1: ingredients column -->
           <div class="wide-ing-col">
             <!-- ingredients header with shopping cart icon -->
             <div class="wide-col-header">
@@ -692,7 +700,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
             </div>
           </div>
 
-          <!-- row 2 col 2: directions column, each step its own card -->
+          <!-- col 2: directions column, each step its own card -->
           <div class="wide-dir-col">
             ${this._renderWakeLock()}
             ${(e.instructions||[]).length?(e.instructions||[]).map((e,t)=>{const i=this._completedSteps.has(t);return U`
@@ -711,6 +719,8 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
               </div>
             `:""}
           </div>
+
+          </div><!-- end wide-row 2 -->
 
         </div>
 
@@ -1980,9 +1990,9 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     }
 
     .wide-layout {
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-      grid-template-rows: auto auto;
+      --ion-grid-columns: 12;
+      display: flex;
+      flex-direction: column;
       gap: 14px;
       padding: 14px;
       width: 100%;
@@ -1990,12 +2000,21 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       flex-shrink: 0;
     }
 
-    /* Row 1, Col 1 — image card.
-       .wide-image-square uses padding-top:100% to force a square box whose height
-       equals the card's CSS width (= col-1 grid width). This is more reliable than
-       aspect-ratio on a grid item inside a scrollable flex container. */
+    /* Each row is a flex container — no gap (columns are exact % fractions summing to 100%).
+       Column spacing is provided by margin-left on col-2 items. */
+    .wide-row {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Col 1 — image card: exact Ionic 4/12 column (33.333% of row width) */
     .wide-image-card {
-      grid-column: 1; grid-row: 1;
+      flex: 0 0 calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
+      width: calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
+      max-width: calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
       min-width: 0;
       border-radius: 16px;
       overflow: hidden;
@@ -2003,28 +2022,28 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       border: 1px solid var(--rm-border);
     }
     .wide-image-square {
-      position: relative;
       width: 100%;
-      padding-top: 100%;   /* height = width → square */
+      height: 35vh;
+      min-height: 200px;
     }
-    .wide-image-square img,
-    .wide-image-square .hero-placeholder {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
+    .wide-image-square img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
     }
-    .wide-image-square img { object-fit: cover; display: block; }
     .wide-image-square .hero-placeholder {
+      width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
       color: var(--rm-text-secondary);
     }
     .wide-image-square .hero-placeholder ha-icon { --mdc-icon-size: 64px; opacity: 0.3; }
 
-    /* Row 1, Col 2 — info card; min-width:0 prevents content from pushing past column boundary */
+    /* Col 2 — info card: exact Ionic 8/12 column; margin-left provides the column gap */
     .wide-info-card {
-      grid-column: 2; grid-row: 1;
+      flex: 0 0 calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
+      width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
+      max-width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
       min-width: 0;
+      box-sizing: border-box;
+      padding-left: 14px;
       border-radius: 16px;
       background: var(--rm-bg-elevated);
       border: 1px solid var(--rm-border);
@@ -2046,19 +2065,26 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     .wide-info-card .meta-chips { justify-content: center; margin-top: 6px; }
     .wide-info-card .chips-area { justify-content: center; margin-top: 4px; }
 
-    /* Row 2, Col 1 — ingredients column (no independent scroll) */
+    /* Row 2, Col 1 — ingredients column: exact Ionic 4/12, aligns with image above */
     .wide-ing-col {
-      grid-column: 1; grid-row: 2;
+      flex: 0 0 calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
+      width: calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
+      max-width: calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
       min-width: 0;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    /* Row 2, Col 2 — directions column (no independent scroll) */
+    /* Row 2, Col 2 — directions column: exact Ionic 8/12, same padding-left as info card */
     .wide-dir-col {
-      grid-column: 2; grid-row: 2;
+      flex: 0 0 calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
+      width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
+      max-width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
       min-width: 0;
+      box-sizing: border-box;
+      padding-left: 14px;
       display: flex;
       flex-direction: column;
       gap: 10px;
