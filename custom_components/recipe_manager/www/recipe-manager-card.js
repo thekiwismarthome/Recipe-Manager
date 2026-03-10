@@ -1983,13 +1983,17 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       grid-template-rows: auto auto;
       gap: 14px;
       padding: 14px;
-      flex-shrink: 0;   /* don't compress inside flex container */
+      width: 100%;
+      box-sizing: border-box;
+      flex-shrink: 0;
     }
 
-    /* Row 1, Col 1 — image card, same height as info card via grid row stretch */
+    /* Row 1, Col 1 — square image card; aspect-ratio forces height = column width,
+       overflow:hidden + object-fit:cover crops any non-square source image to fill it */
     .wide-image-card {
       grid-column: 1; grid-row: 1;
-      min-height: 200px;
+      min-width: 0;
+      aspect-ratio: 1 / 1;
       border-radius: 16px;
       overflow: hidden;
       background: var(--rm-bg-elevated);
@@ -1997,14 +2001,15 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     }
     .wide-image-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .wide-image-card .hero-placeholder {
-      width: 100%; height: 100%; min-height: 200px; display: flex; align-items: center;
+      width: 100%; height: 100%; display: flex; align-items: center;
       justify-content: center; color: var(--rm-text-secondary);
     }
     .wide-image-card .hero-placeholder ha-icon { --mdc-icon-size: 64px; opacity: 0.3; }
 
-    /* Row 1, Col 2 — info card, same height as image via shared grid row */
+    /* Row 1, Col 2 — info card; min-width:0 prevents content from pushing past column boundary */
     .wide-info-card {
       grid-column: 2; grid-row: 1;
+      min-width: 0;
       border-radius: 16px;
       background: var(--rm-bg-elevated);
       border: 1px solid var(--rm-border);
@@ -2012,6 +2017,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       display: flex;
       flex-direction: column;
       align-items: center;
+      overflow: hidden;
     }
     .wide-title {
       margin: 0 0 4px; font-size: 22px; font-weight: 700;
@@ -2029,6 +2035,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     /* Row 2, Col 1 — ingredients column (no independent scroll) */
     .wide-ing-col {
       grid-column: 1; grid-row: 2;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -2037,6 +2044,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     /* Row 2, Col 2 — directions column (no independent scroll) */
     .wide-dir-col {
       grid-column: 2; grid-row: 2;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 10px;
