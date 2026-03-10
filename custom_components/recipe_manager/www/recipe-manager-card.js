@@ -591,8 +591,14 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       </div>
     `:""}render(){if(!this.recipe)return U``;const e=this.recipe;return this.wide?this._renderWide(e):this._renderNarrow(e)}_renderWide(e){const t=this._groupIngredients(e.ingredients),i=this._showShoppingPicker,r=this._checkedIngredients,n=r?.size??0;return U`
       <div class="detail-container wide">
-        <!-- Top row: image card + info card -->
-        <div class="wide-top-row">
+        <!--
+          CSS grid: 2 cols (1fr 2fr) × 2 rows (auto 1fr)
+          [image]   [info card]      ← same height, square image
+          [ings]    [directions]     ← fills remaining height, columns align with row above
+        -->
+        <div class="wide-layout">
+
+          <!-- row 1 col 1: square image card -->
           <div class="wide-image-card">
             ${e.image_url?U`
               <img src="${e.image_url}" alt="${e.name}" />
@@ -603,26 +609,19 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
             `}
           </div>
 
+          <!-- row 1 col 2: info card, same height as image -->
           <div class="wide-info-card">
-            <h1 class="recipe-title wide-centered">${e.name}</h1>
+            <h1 class="wide-title">${e.name}</h1>
             ${this._renderQuickRating(e)}
             ${this._renderActionButtons(e)}
-            ${e.description?U`<p class="detail-desc wide-centered">${e.description}</p>`:""}
+            ${e.description?U`<p class="wide-desc">${e.description}</p>`:""}
             ${this._renderMetaRow(e)}
             ${this._renderChipGroups(e)}
           </div>
-        </div>
 
-        <!-- Scaler + wake lock -->
-        <div class="wide-utility-row">
-          ${this._renderScaler()}
-          ${this._renderWakeLock()}
-        </div>
-
-        <!-- Bottom: ingredients (left) + directions (right) -->
-        <div class="wide-bottom-row">
-          <!-- Ingredients column with section cards -->
-          <div class="wide-ing-col">
+          <!-- row 2 col 1: ingredients scroll, aligns under image -->
+          <div class="wide-ing-scroll">
+            ${this._renderScaler()}
             ${t.map(t=>U`
               <div class="wide-section-card">
                 ${t.header?U`<div class="wide-section-title">${t.header}</div>`:""}
@@ -644,13 +643,9 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
                 `:""}
               </div>
             `)}
-
-            <!-- Nutrition ring card -->
             <div class="wide-section-card">
               ${this._renderNutritionRing(e)}
             </div>
-
-            <!-- Shopping section -->
             <div class="wide-section-card">
               ${"success"===this._shoppingResult?U`
                 <div class="shopping-success">
@@ -689,17 +684,21 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
             </div>
           </div>
 
-          <!-- Directions card -->
-          <div class="wide-directions-card">
-            <div class="wide-section-title">Directions</div>
-            ${this._renderDirections(e)}
+          <!-- row 2 col 2: directions scroll, aligns under info card -->
+          <div class="wide-dir-scroll">
+            ${this._renderWakeLock()}
+            <div class="wide-section-card">
+              <div class="wide-section-title">Directions</div>
+              ${this._renderDirections(e)}
+            </div>
             ${e.notes?U`
-              <div class="notes-section">
-                <h3>Notes</h3>
+              <div class="wide-section-card">
+                <div class="wide-section-title">Notes</div>
                 <p class="notes-text">${e.notes}</p>
               </div>
             `:""}
           </div>
+
         </div>
 
         <!-- Edit overlay -->
@@ -1910,16 +1909,22 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       background: var(--error-color, #cf6679); color: #fff;
     }
 
-    /* ── Wide card layout ───────────────────────────────── */
-    .wide-top-row {
-      display: flex;
+    /* ── Wide grid layout (2 cols × 2 rows) ─────────────── */
+    .wide-layout {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      grid-template-rows: auto 1fr;
       gap: 14px;
       padding: 14px;
-      flex-shrink: 0;
-      height: min(260px, 35vh);
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
     }
+
+    /* Row 1, Col 1 — square image */
     .wide-image-card {
-      flex: 0 0 33%;
+      grid-column: 1; grid-row: 1;
+      aspect-ratio: 1 / 1;
       border-radius: 16px;
       overflow: hidden;
       background: var(--rm-bg-elevated);
@@ -1932,8 +1937,9 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     }
     .wide-image-card .hero-placeholder ha-icon { --mdc-icon-size: 64px; opacity: 0.3; }
 
+    /* Row 1, Col 2 — info card, same height as image via shared grid row */
     .wide-info-card {
-      flex: 1;
+      grid-column: 2; grid-row: 1;
       border-radius: 16px;
       background: var(--rm-bg-elevated);
       border: 1px solid var(--rm-border);
@@ -1945,62 +1951,54 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       scrollbar-width: thin;
       scrollbar-color: var(--rm-border) transparent;
     }
-    .wide-info-card .recipe-title { font-size: 22px; margin-bottom: 4px; }
-    .wide-info-card .quick-rating { justify-content: center; margin-bottom: 8px; }
-    .wide-info-card .action-btns-row { justify-content: center; }
-    .wide-info-card .detail-desc { text-align: center; margin: 8px 0; }
-    .wide-info-card .meta-chips { justify-content: center; margin-top: 8px; }
+    .wide-title {
+      margin: 0 0 4px; font-size: 22px; font-weight: 700;
+      color: var(--rm-text); line-height: 1.2; text-align: center;
+    }
+    .wide-desc {
+      text-align: center; margin: 6px 0;
+      font-size: 13px; color: var(--rm-text-secondary); line-height: 1.5;
+    }
+    .wide-info-card .quick-rating { justify-content: center; margin-bottom: 6px; }
+    .wide-info-card .action-btns-row { justify-content: center; flex-wrap: wrap; }
+    .wide-info-card .meta-chips { justify-content: center; margin-top: 6px; }
     .wide-info-card .chips-area { justify-content: center; margin-top: 4px; }
 
-    .wide-utility-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 14px 8px;
-      flex-shrink: 0;
-      min-height: 0;
-    }
-    .wide-utility-row:empty { display: none; }
-
-    .wide-bottom-row {
-      display: flex;
-      gap: 14px;
-      padding: 0 14px 14px;
-      flex: 1;
-      overflow: hidden;
-      min-height: 0;
-    }
-    .wide-ing-col {
-      flex: 0 0 40%;
+    /* Row 2, Col 1 — ingredients scroll, aligns under image */
+    .wide-ing-scroll {
+      grid-column: 1; grid-row: 2;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      min-height: 0;
       scrollbar-width: thin;
       scrollbar-color: var(--rm-border) transparent;
     }
-    .wide-directions-card {
-      flex: 1;
+
+    /* Row 2, Col 2 — directions scroll, aligns under info card */
+    .wide-dir-scroll {
+      grid-column: 2; grid-row: 2;
       overflow-y: auto;
-      background: var(--rm-bg-elevated);
-      border: 1px solid var(--rm-border);
-      border-radius: 16px;
-      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
       scrollbar-width: thin;
       scrollbar-color: var(--rm-border) transparent;
     }
+
+    /* Ingredient/directions section cards */
     .wide-section-card {
       background: var(--rm-bg-elevated);
       border: 1px solid var(--rm-border);
       border-radius: 14px;
       padding: 12px 14px;
+      flex-shrink: 0;
     }
     .wide-section-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--rm-text);
-      margin-bottom: 10px;
-      padding-bottom: 6px;
+      font-size: 14px; font-weight: 700; color: var(--rm-text);
+      margin-bottom: 10px; padding-bottom: 6px;
       border-bottom: 1px solid var(--rm-border);
     }
   `}try{customElements.define("rm-recipe-detail",ve)}catch{}var _e="undefined"!=typeof globalThis?globalThis:"undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{};function xe(e){return e&&e.__esModule&&Object.prototype.hasOwnProperty.call(e,"default")?e.default:e}function ye(e){throw new Error('Could not dynamically require "'+e+'". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.')}var we={exports:{}};
