@@ -495,9 +495,21 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       </div>
     `:""}_renderChipGroups(e){const t=e.courses||[],i=e.categories||[],r=e.collections||[];return t.length||i.length||r.length?U`
       <div class="chips-area">
-        ${t.map(e=>U`<button class="chip chip-course chip-nav"     @click=${()=>this._handleChipNav("courses",e)}     title="Filter by course: ${e}">Course: ${e}</button>`)}
-        ${i.map(e=>U`<button class="chip chip-category chip-nav"   @click=${()=>this._handleChipNav("categories",e)}  title="Filter by category: ${e}">Category: ${e}</button>`)}
-        ${r.map(e=>U`<button class="chip chip-collection chip-nav" @click=${()=>this._handleChipNav("collections",e)} title="Filter by collection: ${e}">Collection: ${e}</button>`)}
+        ${t.length?U`
+          <div class="chip-group-row">
+            <span class="chip chip-label">Course:</span>
+            ${t.map(e=>U`<button class="chip chip-course chip-nav" @click=${()=>this._handleChipNav("courses",e)} title="Filter by course: ${e}">${e}</button>`)}
+          </div>`:""}
+        ${i.length?U`
+          <div class="chip-group-row">
+            <span class="chip chip-label">Category:</span>
+            ${i.map(e=>U`<button class="chip chip-category chip-nav" @click=${()=>this._handleChipNav("categories",e)} title="Filter by category: ${e}">${e}</button>`)}
+          </div>`:""}
+        ${r.length?U`
+          <div class="chip-group-row">
+            <span class="chip chip-label">Collection:</span>
+            ${r.map(e=>U`<button class="chip chip-collection chip-nav" @click=${()=>this._handleChipNav("collections",e)} title="Filter by collection: ${e}">${e}</button>`)}
+          </div>`:""}
       </div>
     `:""}_renderMetaRow(e){if(!(e.servings||e.prep_time||e.cook_time||e.total_time))return"";const t=e.total_time||(e.prep_time||0)+(e.cook_time||0)||null,i=(e.prep_time||0)+(e.cook_time||0),r=t&&t!==i;return U`
       <div class="meta-chips">
@@ -626,13 +638,14 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
 
           </div><!-- end wide-row 1 -->
 
-          <!-- controls bar: scaler (left) + wake lock + cart (right) -->
-          <div class="wide-controls-bar">
-            <div class="wide-controls-left">
+          <!-- row 2: ingredients (1/3) + directions (2/3) -->
+          <div class="wide-row">
+
+          <!-- col 1: ingredients column -->
+          <div class="wide-ing-col">
+            <!-- ingredients controls: scaler left, cart right — above ingredients only -->
+            <div class="wide-ing-controls">
               ${this._renderScaler()}
-            </div>
-            <div class="wide-controls-right">
-              ${this._renderWakeLock()}
               ${"success"===this._shoppingResult?U`
                 <span class="ing-shop-success"><ha-icon icon="mdi:check-circle-outline"></ha-icon></span>
               `:U`
@@ -643,13 +656,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
                 </button>
               `}
             </div>
-          </div>
 
-          <!-- row 2: ingredients (1/3) + directions (2/3) -->
-          <div class="wide-row">
-
-          <!-- col 1: ingredients column -->
-          <div class="wide-ing-col">
             <!-- shopping picker (shown inline when picking) -->
             ${i?U`
               <div class="wide-section-card shopping-picker-panel">
@@ -705,6 +712,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
 
           <!-- col 2: directions column, each step its own card -->
           <div class="wide-dir-col">
+            ${this._renderWakeLock()}
             ${(e.instructions||[]).length?(e.instructions||[]).map((e,t)=>{const i=this._completedSteps.has(t);return U`
                 <div class="wide-section-card wide-step-card ${i?"step-done":""}">
                   <span class="step-num ${i?"done":""}"
@@ -1250,17 +1258,22 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     .action-icon-btn.danger { background: var(--error-color, #cf6679); color: #fff; border-color: var(--error-color, #cf6679); }
 
     /* Meta chips (wide layout) */
-    .meta-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .meta-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; justify-content: center; }
     .meta-chip-icon {
-      display: inline-flex; align-items: center; gap: 5px;
+      display: inline-flex; align-items: center; gap: 6px;
       background: var(--rm-bg-elevated); border: 1px solid var(--rm-border);
-      border-radius: 20px; padding: 4px 10px; font-size: 12px;
-      color: var(--rm-text-secondary); font-weight: 500;
+      border-radius: 20px; padding: 5px 12px; font-size: 12px;
+      color: var(--rm-text-secondary); font-weight: 600;
     }
     .meta-chip-icon ha-icon { --mdc-icon-size: 14px; }
 
-    /* All chips inline (wide layout) */
-    .chips-area { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    /* Chip groups: column of rows, each row = label chip + value chips */
+    .chips-area { display: flex; flex-direction: column; gap: 5px; }
+    .chip-group-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+    .chip-label {
+      background: var(--rm-bg); border: 1px solid var(--rm-border);
+      color: var(--rm-text-secondary); font-weight: 600; cursor: default;
+    }
 
     /* Hero */
     .hero {
@@ -2016,12 +2029,13 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       box-sizing: border-box;
     }
 
-    /* Col 1 — image card: exact Ionic 4/12 column (33.333% of row width) */
+    /* Col 1 — image card: exact Ionic 4/12 column; aspect-ratio:1/1 makes height = width */
     .wide-image-card {
       flex: 0 0 calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
       width: calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
       max-width: calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
       min-width: 0;
+      aspect-ratio: 1 / 1;
       border-radius: 16px;
       overflow: hidden;
       background: var(--rm-bg-elevated);
@@ -2029,8 +2043,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     }
     .wide-image-square {
       width: 100%;
-      height: 35vh;
-      min-height: 200px;
+      height: 100%;
     }
     .wide-image-square img {
       width: 100%; height: 100%; object-fit: cover; display: block;
@@ -2069,7 +2082,8 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     .wide-info-card .quick-rating { justify-content: center; margin-bottom: 6px; }
     .wide-info-card .action-btns-row { justify-content: center; flex-wrap: wrap; width: 100%; }
     .wide-info-card .meta-chips { justify-content: center; margin-top: 6px; }
-    .wide-info-card .chips-area { justify-content: center; margin-top: 4px; }
+    /* Chips pushed to bottom-left of info card */
+    .wide-info-card .chips-area { align-self: flex-start; margin-top: auto; padding-top: 10px; }
 
     /* Row 2, Col 1 — ingredients column: exact Ionic 4/12, aligns with image above */
     .wide-ing-col {
@@ -2094,22 +2108,12 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       gap: 10px;
     }
 
-    /* Full-width controls bar between row 1 and row 2:
-       scaler on the left, wake lock + cart on the right */
-    .wide-controls-bar {
+    /* Ingredients column controls: scaler left, cart right — above ingredients only */
+    .wide-ing-controls {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
-    }
-    .wide-controls-left {
-      display: flex;
-      align-items: center;
-    }
-    .wide-controls-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      padding-bottom: 2px;
     }
     .ing-shop-btn {
       background: var(--rm-bg-elevated); border: 1px solid var(--rm-border);
