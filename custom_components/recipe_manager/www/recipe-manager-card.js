@@ -631,9 +631,8 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
 
           <!-- col 1: ingredients column -->
           <div class="wide-ing-col">
-            <!-- ingredients header with shopping cart icon -->
+            <!-- ingredients header: cart icon only, no label -->
             <div class="wide-col-header">
-              <span class="wide-col-title">Ingredients</span>
               ${"success"===this._shoppingResult?U`
                 <span class="ing-shop-success"><ha-icon icon="mdi:check-circle-outline"></ha-icon></span>
               `:U`
@@ -919,7 +918,10 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
             <div class="nutr-divider"></div>
           `})}
       </div>
-    `}_renderNutritionRing(e){const t=e?.nutrition||{},i=parseFloat(t.calories)||0,r=parseFloat(t.fat)||0,n=parseFloat(t.carbohydrates)||0,a=parseFloat(t.protein)||0,s=9*r,o=4*n,l=4*a,c=s+o+l;if(!(c>0||i>0))return U`<p class="empty-tab" style="margin:0;padding:12px 0">No nutrition data.</p>`;const d=90,p=38,h=25,u=[{label:"Carbs",val:n,cal:o,color:"#f59e0b"},{label:"Total fat",val:r,cal:s,color:"#3b82f6"},{label:"Protein",val:a,cal:l,color:"#22c55e"}];function m(e,t){const i=(e-90)*Math.PI/180;return[45+t*Math.cos(i),45+t*Math.sin(i)]}function f(e,t){const[i,r]=m(e,p),[n,a]=m(t,p),[s,o]=m(e,h),[l,c]=m(t,h),d=t-e>180?1:0;return`M ${i} ${r} A 38 38 0 ${d} 1 ${n} ${a} L ${l} ${c} A 25 25 0 ${d} 0 ${s} ${o} Z`}const g=[];if(c>0){let e=0;for(const t of u){if(t.cal<=0)continue;const i=t.cal/c*358;g.push({...t,path:f(e,e+i)}),e+=i+2}}const b=i>0?i:c>0?Math.round(c/9):null,v=Object.entries(be).filter(([e])=>parseFloat(t[e])>0).map(([e,i])=>{const r=parseFloat(t[e]),n=Math.min(Math.round(r/i.val*100),999);return{key:e,label:i.label,val:r,unit:i.unit,pct:n}});return U`
+    `}_renderNutritionRing(e){const t=e?.nutrition||{},i=parseFloat(t.calories)||0,r=parseFloat(t.fat)||0,n=parseFloat(t.carbohydrates)||0,a=parseFloat(t.protein)||0,s=9*r,o=4*n,l=4*a,c=s+o+l;if(!(c>0||i>0))return U`
+        <div class="nutr-card">
+          <p class="empty-tab" style="margin:0;padding:8px 0;text-align:center">No nutritional information available.</p>
+        </div>`;const d=90,p=38,h=25,u=[{label:"Carbs",val:n,cal:o,color:"#f59e0b"},{label:"Total fat",val:r,cal:s,color:"#3b82f6"},{label:"Protein",val:a,cal:l,color:"#22c55e"}];function m(e,t){const i=(e-90)*Math.PI/180;return[45+t*Math.cos(i),45+t*Math.sin(i)]}function f(e,t){const[i,r]=m(e,p),[n,a]=m(t,p),[s,o]=m(e,h),[l,c]=m(t,h),d=t-e>180?1:0;return`M ${i} ${r} A 38 38 0 ${d} 1 ${n} ${a} L ${l} ${c} A 25 25 0 ${d} 0 ${s} ${o} Z`}const g=[];if(c>0){let e=0;for(const t of u){if(t.cal<=0)continue;const i=t.cal/c*358;g.push({...t,path:f(e,e+i)}),e+=i+2}}const b=i>0?i:c>0?Math.round(c/9):null,v=Object.entries(be).filter(([e])=>parseFloat(t[e])>0).map(([e,i])=>{const r=parseFloat(t[e]),n=Math.min(Math.round(r/i.val*100),999);return{key:e,label:i.label,val:r,unit:i.unit,pct:n}});return U`
       <div class="nutr-card">
         <!-- Top row: donut + macro columns -->
         <div class="nutr-top">
@@ -2043,6 +2045,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100% - 14px);
       max-width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100% - 14px);
       min-width: 0;
+      box-sizing: border-box;
       margin-left: 14px;
       border-radius: 16px;
       background: var(--rm-bg-elevated);
@@ -2088,11 +2091,11 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       gap: 10px;
     }
 
-    /* Ingredients column header (label + cart icon) */
+    /* Ingredients column header (cart icon only, right-aligned) */
     .wide-col-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
       padding: 0 2px 2px;
     }
     .wide-col-title {
