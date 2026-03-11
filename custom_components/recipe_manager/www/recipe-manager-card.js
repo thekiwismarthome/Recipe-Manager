@@ -626,13 +626,13 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
 
           </div><!-- end wide-row 1 -->
 
-          <!-- row 2: ingredients (1/3) + directions (2/3) -->
-          <div class="wide-row">
-
-          <!-- col 1: ingredients column -->
-          <div class="wide-ing-col">
-            <!-- ingredients header: cart icon only, no label -->
-            <div class="wide-col-header">
+          <!-- controls bar: scaler (left) + wake lock + cart (right) -->
+          <div class="wide-controls-bar">
+            <div class="wide-controls-left">
+              ${this._renderScaler()}
+            </div>
+            <div class="wide-controls-right">
+              ${this._renderWakeLock()}
               ${"success"===this._shoppingResult?U`
                 <span class="ing-shop-success"><ha-icon icon="mdi:check-circle-outline"></ha-icon></span>
               `:U`
@@ -643,9 +643,13 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
                 </button>
               `}
             </div>
+          </div>
 
-            ${this._renderScaler()}
+          <!-- row 2: ingredients (1/3) + directions (2/3) -->
+          <div class="wide-row">
 
+          <!-- col 1: ingredients column -->
+          <div class="wide-ing-col">
             <!-- shopping picker (shown inline when picking) -->
             ${i?U`
               <div class="wide-section-card shopping-picker-panel">
@@ -701,7 +705,6 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
 
           <!-- col 2: directions column, each step its own card -->
           <div class="wide-dir-col">
-            ${this._renderWakeLock()}
             ${(e.instructions||[]).length?(e.instructions||[]).map((e,t)=>{const i=this._completedSteps.has(t);return U`
                 <div class="wide-section-card wide-step-card ${i?"step-done":""}">
                   <span class="step-num ${i?"done":""}"
@@ -2091,17 +2094,22 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       gap: 10px;
     }
 
-    /* Ingredients column header (cart icon only, right-aligned) */
-    .wide-col-header {
+    /* Full-width controls bar between row 1 and row 2:
+       scaler on the left, wake lock + cart on the right */
+    .wide-controls-bar {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      padding: 0 2px 2px;
+      justify-content: space-between;
+      gap: 8px;
     }
-    .wide-col-title {
-      font-size: 13px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.07em;
-      color: var(--rm-text-secondary);
+    .wide-controls-left {
+      display: flex;
+      align-items: center;
+    }
+    .wide-controls-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     .ing-shop-btn {
       background: var(--rm-bg-elevated); border: 1px solid var(--rm-border);
