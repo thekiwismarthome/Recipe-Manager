@@ -2001,11 +2001,12 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     }
 
     /* Each row is a flex container — no gap (columns are exact % fractions summing to 100%).
-       Column spacing is provided by margin-left on col-2 items. */
+       align-items:stretch makes both columns the same height.
+       Column spacing uses margin-left + reduced width on col-2 items. */
     .wide-row {
       display: flex;
       flex-direction: row;
-      align-items: flex-start;
+      align-items: stretch;
       width: 100%;
       box-sizing: border-box;
     }
@@ -2036,14 +2037,13 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     }
     .wide-image-square .hero-placeholder ha-icon { --mdc-icon-size: 64px; opacity: 0.3; }
 
-    /* Col 2 — info card: exact Ionic 8/12 column; margin-left provides the column gap */
+    /* Col 2 — info card: 8/12 minus the 14px gap, with margin-left for the gap */
     .wide-info-card {
-      flex: 0 0 calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
-      width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
-      max-width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
+      flex: 0 0 calc(calc(8 / var(--ion-grid-columns, 12)) * 100% - 14px);
+      width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100% - 14px);
+      max-width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100% - 14px);
       min-width: 0;
-      box-sizing: border-box;
-      padding-left: 14px;
+      margin-left: 14px;
       border-radius: 16px;
       background: var(--rm-bg-elevated);
       border: 1px solid var(--rm-border);
@@ -2071,20 +2071,18 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
       width: calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
       max-width: calc(calc(4 / var(--ion-grid-columns, 12)) * 100%);
       min-width: 0;
-      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    /* Row 2, Col 2 — directions column: exact Ionic 8/12, same padding-left as info card */
+    /* Row 2, Col 2 — directions column: 8/12 minus gap, margin-left for spacing */
     .wide-dir-col {
-      flex: 0 0 calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
-      width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
-      max-width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100%);
+      flex: 0 0 calc(calc(8 / var(--ion-grid-columns, 12)) * 100% - 14px);
+      width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100% - 14px);
+      max-width: calc(calc(8 / var(--ion-grid-columns, 12)) * 100% - 14px);
       min-width: 0;
-      box-sizing: border-box;
-      padding-left: 14px;
+      margin-left: 14px;
       display: flex;
       flex-direction: column;
       gap: 10px;
