@@ -63,6 +63,14 @@ async def async_scrape_recipe(hass: HomeAssistant, url: str) -> Dict[str, Any]:
         scraper = scrape_html(html, org_url=url, wild_mode=True)
         result = _extract_from_scraper(scraper, url)
         if result.get("name"):
+            # recipe-scrapers often omits nutrition even when JSON-LD has it — supplement
+            if not result.get("nutrition"):
+                try:
+                    jld = _extract_from_jsonld(html, url)
+                    if jld.get("nutrition"):
+                        result["nutrition"] = jld["nutrition"]
+                except Exception:
+                    pass
             return result
         _LOGGER.debug("recipe-scrapers returned no title for %s, trying JSON-LD fallback", url)
     except Exception as exc:
