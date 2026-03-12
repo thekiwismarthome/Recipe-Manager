@@ -18,9 +18,24 @@ from aiohttp import ClientTimeout
 _LOGGER = logging.getLogger(__name__)
 
 _USER_AGENT = (
-    "Mozilla/5.0 (compatible; HomeAssistant/RecipeManager; "
-    "+https://github.com/thekiwismarthome/recipe-manager)"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0.0.0 Safari/537.36"
 )
+
+_REQUEST_HEADERS = {
+    "User-Agent": _USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "DNT": "1",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0",
+}
 
 
 async def async_scrape_recipe(hass: HomeAssistant, url: str) -> Dict[str, Any]:
@@ -30,11 +45,10 @@ async def async_scrape_recipe(hass: HomeAssistant, url: str) -> Dict[str, Any]:
     Raises ValueError if the page cannot be parsed as a recipe.
     """
     session = async_get_clientsession(hass)
-    headers = {"User-Agent": _USER_AGENT}
 
     try:
         async with session.get(
-            url, timeout=ClientTimeout(total=20), headers=headers, allow_redirects=True
+            url, timeout=ClientTimeout(total=30), headers=_REQUEST_HEADERS, allow_redirects=True
         ) as resp:
             if resp.status != 200:
                 raise ValueError(f"HTTP {resp.status} fetching {url}")
