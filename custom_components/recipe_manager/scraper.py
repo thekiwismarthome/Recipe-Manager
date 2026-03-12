@@ -63,14 +63,17 @@ async def async_scrape_recipe(hass: HomeAssistant, url: str) -> Dict[str, Any]:
         scraper = scrape_html(html, org_url=url, wild_mode=True)
         result = _extract_from_scraper(scraper, url)
         if result.get("name"):
-            # recipe-scrapers often omits nutrition even when JSON-LD has it — supplement
-            if not result.get("nutrition"):
-                try:
-                    jld = _extract_from_jsonld(html, url)
-                    if jld.get("nutrition"):
-                        result["nutrition"] = jld["nutrition"]
-                except Exception:
-                    pass
+            # recipe-scrapers often omits nutrition or returns only calories without
+            # macros — supplement from JSON-LD for any missing fields
+            try:
+                jld = _extract_from_jsonld(html, url)
+                jld_nutr = jld.get("nutrition") or {}
+                if jld_nutr:
+                    existing = result.get("nutrition") or {}
+                    # JSON-LD is base; recipe-scrapers values take precedence where present
+                    result["nutrition"] = {**jld_nutr, **existing} or None
+            except Exception:
+                pass
             return result
         _LOGGER.debug("recipe-scrapers returned no title for %s, trying JSON-LD fallback", url)
     except Exception as exc:
@@ -293,7 +296,7 @@ def _parse_ingredient_string(raw: str) -> Dict[str, Any]:
     # Pattern: optional number (incl fractions) + optional unit + rest
     pattern = re.compile(
         r"^"
-        r"(?P<amount>\d+(?:[.,/]\d+)?(?:\s*-\s*\d+(?:[.,/]\d+)?)?\s*(?:\d+/\d+)?)??"
+        r"(?P<amount>\d+(?:[.,/]\d+)?(?:\s*-\s*\d+(?:[.,/]\d+)?)?\s*(?:\d+/\d+)?)?"
         r"\s*"
         r"(?:(?P<unit>tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lb|lbs?|g|kg|ml|mL|L|litre?s?|"
         r"pint|quart|gallon|fl\.?\s*oz|can|cans|bunch|head|clove|cloves|slice|slices|"
