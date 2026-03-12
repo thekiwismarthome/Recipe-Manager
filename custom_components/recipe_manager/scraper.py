@@ -9,7 +9,6 @@ import json
 import logging
 import re
 from typing import Any, Dict, List, Optional
-from urllib.parse import urlparse
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -288,10 +287,10 @@ def _parse_ingredient_string(raw: str) -> Dict[str, Any]:
         r"^"
         r"(?P<amount>\d+(?:[.,/]\d+)?(?:\s*-\s*\d+(?:[.,/]\d+)?)?\s*(?:\d+/\d+)?)??"
         r"\s*"
-        r"(?P<unit>tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lb|lbs?|g|kg|ml|mL|L|litre?s?|"
+        r"(?:(?P<unit>tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lb|lbs?|g|kg|ml|mL|L|litre?s?|"
         r"pint|quart|gallon|fl\.?\s*oz|can|cans|bunch|head|clove|cloves|slice|slices|"
-        r"piece|pieces|sheet|sheets|pinch|dash|handful|sprig|sprigs|stalk|stalks)\.?"
-        r")?\s*"
+        r"piece|pieces|sheet|sheets|pinch|dash|handful|sprig|sprigs|stalk|stalks)\.?)?"
+        r"\s*"
         r"(?P<name>.+?)$",
         re.IGNORECASE,
     )
