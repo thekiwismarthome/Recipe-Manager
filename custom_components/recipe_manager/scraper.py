@@ -9,7 +9,6 @@ import json
 import logging
 import re
 from typing import Any, Dict, List, Optional
-from urllib.parse import urlparse
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -18,9 +17,24 @@ from aiohttp import ClientTimeout
 _LOGGER = logging.getLogger(__name__)
 
 _USER_AGENT = (
-    "Mozilla/5.0 (compatible; HomeAssistant/RecipeManager; "
-    "+https://github.com/thekiwismarthome/recipe-manager)"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0.0.0 Safari/537.36"
 )
+
+_REQUEST_HEADERS = {
+    "User-Agent": _USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "DNT": "1",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0",
+}
 
 
 async def async_scrape_recipe(hass: HomeAssistant, url: str) -> Dict[str, Any]:
@@ -30,11 +44,10 @@ async def async_scrape_recipe(hass: HomeAssistant, url: str) -> Dict[str, Any]:
     Raises ValueError if the page cannot be parsed as a recipe.
     """
     session = async_get_clientsession(hass)
-    headers = {"User-Agent": _USER_AGENT}
 
     try:
         async with session.get(
-            url, timeout=ClientTimeout(total=20), headers=headers, allow_redirects=True
+            url, timeout=ClientTimeout(total=30), headers=_REQUEST_HEADERS, allow_redirects=True
         ) as resp:
             if resp.status != 200:
                 raise ValueError(f"HTTP {resp.status} fetching {url}")
@@ -50,6 +63,17 @@ async def async_scrape_recipe(hass: HomeAssistant, url: str) -> Dict[str, Any]:
         scraper = scrape_html(html, org_url=url, wild_mode=True)
         result = _extract_from_scraper(scraper, url)
         if result.get("name"):
+            # recipe-scrapers often omits nutrition or returns only calories without
+            # macros — supplement from JSON-LD for any missing fields
+            try:
+                jld = _extract_from_jsonld(html, url)
+                jld_nutr = jld.get("nutrition") or {}
+                if jld_nutr:
+                    existing = result.get("nutrition") or {}
+                    # JSON-LD is base; recipe-scrapers values take precedence where present
+                    result["nutrition"] = {**jld_nutr, **existing} or None
+            except Exception:
+                pass
             return result
         _LOGGER.debug("recipe-scrapers returned no title for %s, trying JSON-LD fallback", url)
     except Exception as exc:
@@ -272,12 +296,12 @@ def _parse_ingredient_string(raw: str) -> Dict[str, Any]:
     # Pattern: optional number (incl fractions) + optional unit + rest
     pattern = re.compile(
         r"^"
-        r"(?P<amount>\d+(?:[.,/]\d+)?(?:\s*-\s*\d+(?:[.,/]\d+)?)?\s*(?:\d+/\d+)?)??"
+        r"(?P<amount>\d+(?:[.,/]\d+)?(?:\s*-\s*\d+(?:[.,/]\d+)?)?\s*(?:\d+/\d+)?)?"
         r"\s*"
-        r"(?P<unit>tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lb|lbs?|g|kg|ml|mL|L|litre?s?|"
+        r"(?:(?P<unit>tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lb|lbs?|g|kg|ml|mL|L|litre?s?|"
         r"pint|quart|gallon|fl\.?\s*oz|can|cans|bunch|head|clove|cloves|slice|slices|"
-        r"piece|pieces|sheet|sheets|pinch|dash|handful|sprig|sprigs|stalk|stalks)\.?"
-        r")?\s*"
+        r"piece|pieces|sheet|sheets|pinch|dash|handful|sprig|sprigs|stalk|stalks)\.?)?"
+        r"\s*"
         r"(?P<name>.+?)$",
         re.IGNORECASE,
     )
