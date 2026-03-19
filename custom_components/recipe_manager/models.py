@@ -67,6 +67,7 @@ class Recipe:
     is_favourite: bool = False
     rating: Optional[int] = None      # 1-5
     notes: Optional[str] = None
+    photos: List[str] = field(default_factory=list)  # additional image URLs beyond image_url
     created_at: str = field(default_factory=current_timestamp)
     updated_at: str = field(default_factory=current_timestamp)
 
@@ -105,6 +106,7 @@ class Recipe:
             is_favourite=data.get("is_favourite") or data.get("favourite", False),
             rating=data.get("rating"),
             notes=data.get("notes"),
+            photos=data.get("photos", []),
             created_at=data.get("created_at", current_timestamp()),
             updated_at=data.get("updated_at", current_timestamp()),
         )

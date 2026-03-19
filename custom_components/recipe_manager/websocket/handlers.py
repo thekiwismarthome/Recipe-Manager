@@ -114,6 +114,7 @@ async def websocket_scrape_recipe(hass, connection, msg):
     vol.Optional("source_url"): vol.Any(str, None),
     vol.Optional("description"): vol.Any(str, None),
     vol.Optional("image_url"): vol.Any(str, None),
+    vol.Optional("photos"): list,
     vol.Optional("cuisine"): vol.Any(str, None),
     vol.Optional("category"): vol.Any(str, None),
     vol.Optional("prep_time"): vol.Any(int, None),
@@ -159,6 +160,7 @@ async def websocket_add_recipe(hass, connection, msg):
     vol.Optional("source_url"): vol.Any(str, None),
     vol.Optional("description"): vol.Any(str, None),
     vol.Optional("image_url"): vol.Any(str, None),
+    vol.Optional("photos"): list,
     vol.Optional("cuisine"): vol.Any(str, None),
     vol.Optional("category"): vol.Any(str, None),
     vol.Optional("prep_time"): vol.Any(int, None),
@@ -407,5 +409,12 @@ async def websocket_upload_recipe_image(hass, connection, msg):
         connection.send_error(msg["id"], "save_failed", "Could not save image file")
         return
 
-    await storage.update_recipe(msg["recipe_id"], {"image_url": local_url})
-    connection.send_result(msg["id"], {"image_url": local_url})
+    # Append to photos list; only set as main image_url if none exists yet
+    existing_photos = recipe.photos or []
+    new_photos = existing_photos + [local_url] if local_url not in existing_photos else existing_photos
+    update_data = {"photos": new_photos}
+    if not recipe.image_url:
+        update_data["image_url"] = local_url
+    await storage.update_recipe(msg["recipe_id"], update_data)
+    hass.bus.async_fire(EVENT_RECIPE_UPDATED, {"recipe_id": recipe.id})
+    connection.send_result(msg["id"], {"image_url": local_url, "local_url": local_url})
