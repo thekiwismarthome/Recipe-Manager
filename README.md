@@ -30,12 +30,20 @@ A Home Assistant custom integration that gives you a full recipe management syst
 
 ### Step 1 — Add via HACS
 
+Click the button below to add this repository directly to HACS:
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=thekiwismarthome&repository=Recipe-Manager&category=integration)
+
+<details>
+<summary>Manual HACS steps</summary>
+
 1. Open HACS in your Home Assistant sidebar
 2. Click **Integrations**
 3. Click the three-dot menu (top right) → **Custom repositories**
 4. Paste `https://github.com/thekiwismarthome/Recipe-Manager` and select category **Integration**
-5. Click **Add**
-6. Search for **Recipe Manager** and click **Download**
+5. Click **Add**, then search for **Recipe Manager** and click **Download**
+
+</details>
 
 ### Step 2 — Restart Home Assistant
 
@@ -43,9 +51,18 @@ Go to **Settings → System → Restart** and wait for HA to come back up.
 
 ### Step 3 — Add the Integration
 
+Click the button below to add the integration to your Home Assistant:
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=recipe_manager)
+
+<details>
+<summary>Manual steps</summary>
+
 1. Go to **Settings → Devices & Services → Add Integration**
 2. Search for **Recipe Manager** and click it
 3. Follow the setup wizard (no credentials needed — it runs fully locally)
+
+</details>
 
 ### Step 4 — Install the Card
 
