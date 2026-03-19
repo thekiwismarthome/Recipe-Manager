@@ -228,11 +228,26 @@ class RecipeStorage:
     # Image download + save
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _process_and_write_image(raw: bytes, dest: Path) -> None:
+        """Synchronous: convert raw image bytes to WebP and write to dest (runs in executor)."""
+        from PIL import Image
+        img = Image.open(io.BytesIO(raw))
+        if img.mode == "RGBA":
+            bg = Image.new("RGB", img.size, (255, 255, 255))
+            bg.paste(img, mask=img.split()[3])
+            img = bg
+        elif img.mode != "RGB":
+            img = img.convert("RGB")
+        img.thumbnail((IMAGE_SIZE, IMAGE_SIZE), Image.LANCZOS)
+        out = io.BytesIO()
+        img.save(out, format="WEBP", quality=IMAGE_QUALITY)
+        dest.write_bytes(out.getvalue())
+
     async def download_and_save_image(self, image_url: str, recipe_id: str) -> Optional[str]:
         """Download a remote image, convert to WebP, return local URL."""
         from homeassistant.helpers.aiohttp_client import async_get_clientsession
         from aiohttp import ClientTimeout
-        from PIL import Image
 
         safe_id = re.sub(r"[^a-z0-9_-]", "", recipe_id.lower())
         filename = f"recipe_{safe_id}.webp"
@@ -252,17 +267,7 @@ class RecipeStorage:
             return None
 
         try:
-            img = Image.open(io.BytesIO(raw))
-            if img.mode == "RGBA":
-                bg = Image.new("RGB", img.size, (255, 255, 255))
-                bg.paste(img, mask=img.split()[3])
-                img = bg
-            elif img.mode != "RGB":
-                img = img.convert("RGB")
-            img.thumbnail((IMAGE_SIZE, IMAGE_SIZE), Image.LANCZOS)
-            out = io.BytesIO()
-            img.save(out, format="WEBP", quality=IMAGE_QUALITY)
-            dest.write_bytes(out.getvalue())
+            await self.hass.async_add_executor_job(self._process_and_write_image, raw, dest)
             return f"{LOCAL_IMAGE_URL_PREFIX}{filename}"
         except Exception as exc:
             _LOGGER.warning("Failed to convert recipe image: %s", exc)
@@ -270,24 +275,12 @@ class RecipeStorage:
 
     async def save_image_from_bytes(self, raw: bytes, recipe_id: str) -> Optional[str]:
         """Convert raw image bytes to WebP and save locally, return local URL."""
-        from PIL import Image
-
         safe_id = re.sub(r"[^a-z0-9_-]", "", recipe_id.lower())
         filename = f"recipe_{safe_id}.webp"
         dest = self._images_dir / filename
 
         try:
-            img = Image.open(io.BytesIO(raw))
-            if img.mode == "RGBA":
-                bg = Image.new("RGB", img.size, (255, 255, 255))
-                bg.paste(img, mask=img.split()[3])
-                img = bg
-            elif img.mode != "RGB":
-                img = img.convert("RGB")
-            img.thumbnail((IMAGE_SIZE, IMAGE_SIZE), Image.LANCZOS)
-            out = io.BytesIO()
-            img.save(out, format="WEBP", quality=IMAGE_QUALITY)
-            dest.write_bytes(out.getvalue())
+            await self.hass.async_add_executor_job(self._process_and_write_image, raw, dest)
             return f"{LOCAL_IMAGE_URL_PREFIX}{filename}"
         except Exception as exc:
             _LOGGER.warning("Failed to save image from bytes for %s: %s", recipe_id, exc)
