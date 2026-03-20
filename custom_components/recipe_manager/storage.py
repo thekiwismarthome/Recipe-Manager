@@ -5,6 +5,7 @@ import io
 import logging
 import re
 import shutil
+import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -119,7 +120,7 @@ class RecipeStorage:
             "name", "source_url", "description", "image_url", "cuisine", "category",
             "prep_time", "cook_time", "total_time", "servings", "servings_text",
             "nutrition", "is_favourite", "rating", "notes", "tags",
-            "courses", "categories", "collections",
+            "courses", "categories", "collections", "photos",
         ]
         for key in updatable:
             if key in data:
@@ -276,7 +277,7 @@ class RecipeStorage:
     async def save_image_from_bytes(self, raw: bytes, recipe_id: str) -> Optional[str]:
         """Convert raw image bytes to WebP and save locally, return local URL."""
         safe_id = re.sub(r"[^a-z0-9_-]", "", recipe_id.lower())
-        filename = f"recipe_{safe_id}.webp"
+        filename = f"recipe_{safe_id}_{uuid.uuid4().hex[:8]}.webp"
         dest = self._images_dir / filename
 
         try:
