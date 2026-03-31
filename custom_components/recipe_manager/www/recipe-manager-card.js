@@ -970,7 +970,7 @@ const w=globalThis,k=e=>e,$=w.trustedTypes,S=$?$.createPolicy("lit-html",{create
     `}_renderNutritionRing(e){const t=e?.nutrition||{},i=parseFloat(t.calories)||0,r=parseFloat(t.fat)||0,n=parseFloat(t.carbohydrates)||0,a=parseFloat(t.protein)||0,s=9*r,o=4*n,l=4*a,c=s+o+l;if(!(c>0||i>0))return U`
         <div class="nutr-card">
           <p class="empty-tab" style="margin:0;padding:8px 0;text-align:center">No nutritional information available.</p>
-        </div>`;const d=[{label:"Carbs",val:n,cal:o,color:"#f59e0b"},{label:"Total fat",val:r,cal:s,color:"#3b82f6"},{label:"Protein",val:a,cal:l,color:"#22c55e"}],p=50,h=50,u=2*Math.PI*42,m=5*u/360,g=c>0?Math.max(0,o/c*u-m):0,f=c>0?Math.max(0,s/c*u-m):0,b=c>0?Math.max(0,l/c*u-m):0,v=(c>0?o/c*360:0)-90,_=v+(c>0?s/c*360:0),x=i>0?Math.round(i):c>0?Math.round(c):null,y=Object.entries(be).filter(([e])=>parseFloat(t[e])>0).map(([e,i])=>{const r=parseFloat(t[e]),n=Math.min(Math.round(r/i.val*100),999);return{key:e,label:i.label,val:r,unit:i.unit,pct:n}});return U`
+        </div>`;const d=[{label:"Carbs",val:n,cal:o,color:"#f59e0b"},{label:"Total fat",val:r,cal:s,color:"#3b82f6"},{label:"Protein",val:a,cal:l,color:"#22c55e"}],p=50,h=50,u=2*Math.PI*42,m=7+4*u/360,g=c>0?Math.max(0,o/c*u-m):0,f=c>0?Math.max(0,s/c*u-m):0,b=c>0?Math.max(0,l/c*u-m):0,v=(c>0?o/c*360:0)-90,_=v+(c>0?s/c*360:0),x=i>0?Math.round(i):c>0?Math.round(c):null,y=Object.entries(be).filter(([e])=>parseFloat(t[e])>0).map(([e,i])=>{const r=parseFloat(t[e]),n=Math.min(Math.round(r/i.val*100),999);return{key:e,label:i.label,val:r,unit:i.unit,pct:n}});return U`
       <div class="nutr-card">
         <!-- Top row: donut ring + macro columns -->
         <div class="nutr-top">
