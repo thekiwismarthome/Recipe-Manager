@@ -16,6 +16,7 @@ from .const import (
     STORAGE_VERSION,
     STORAGE_KEY_RECIPES,
     STORAGE_KEY_MEAL_PLANS,
+    STORAGE_KEY_GLOBAL_TIMERS,
     IMAGES_LOCAL_DIR,
     LEGACY_IMAGES_LOCAL_DIR,
     IMAGE_SIZE,
@@ -336,3 +337,40 @@ class RecipeStorage:
     async def _save_meal_plans(self) -> None:
         data = {mid: m.to_dict() for mid, m in self._meal_plans.items()}
         await self._store_meal_plans.async_save(data)
+
+
+class GlobalTimerStorage:
+    """Persistent storage for globally shared timers."""
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+        self._store = Store(hass, STORAGE_VERSION, STORAGE_KEY_GLOBAL_TIMERS)
+        self._timers: Dict[str, dict] = {}
+
+    async def async_load(self) -> None:
+        data = await self._store.async_load()
+        self._timers = data or {}
+
+    def get_timers(self) -> List[dict]:
+        return list(self._timers.values())
+
+    async def add_timer(self, data: dict) -> dict:
+        timer_id = str(uuid.uuid4())
+        timer = {"id": timer_id, **data}
+        self._timers[timer_id] = timer
+        await self._store.async_save(self._timers)
+        return timer
+
+    async def update_timer(self, timer_id: str, updates: dict) -> Optional[dict]:
+        if timer_id not in self._timers:
+            return None
+        self._timers[timer_id].update(updates)
+        await self._store.async_save(self._timers)
+        return self._timers[timer_id]
+
+    async def delete_timer(self, timer_id: str) -> bool:
+        if timer_id not in self._timers:
+            return False
+        del self._timers[timer_id]
+        await self._store.async_save(self._timers)
+        return True

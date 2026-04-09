@@ -14,17 +14,25 @@ from ..const import (
     EVENT_RECIPE_UPDATED,
     EVENT_RECIPE_DELETED,
     EVENT_MEAL_PLAN_UPDATED,
+    EVENT_GLOBAL_TIMER_ADDED,
+    EVENT_GLOBAL_TIMER_UPDATED,
+    EVENT_GLOBAL_TIMER_DELETED,
     MEAL_TYPES,
 )
-from ..storage import RecipeStorage
+from ..storage import RecipeStorage, GlobalTimerStorage
 
 _LOGGER = logging.getLogger(__name__)
 
 DATA_STORAGE = f"{DOMAIN}_storage"
+DATA_GLOBAL_TIMER_STORAGE = f"{DOMAIN}_global_timer_storage"
 
 
 def get_storage(hass: HomeAssistant) -> RecipeStorage:
     return hass.data[DOMAIN][DATA_STORAGE]
+
+
+def get_timer_storage(hass: HomeAssistant) -> GlobalTimerStorage:
+    return hass.data[DOMAIN][DATA_GLOBAL_TIMER_STORAGE]
 
 
 # ===========================================================================
@@ -46,6 +54,7 @@ async def websocket_subscribe(hass, connection, msg):
     events = [
         EVENT_RECIPE_ADDED, EVENT_RECIPE_UPDATED,
         EVENT_RECIPE_DELETED, EVENT_MEAL_PLAN_UPDATED,
+        EVENT_GLOBAL_TIMER_ADDED, EVENT_GLOBAL_TIMER_UPDATED, EVENT_GLOBAL_TIMER_DELETED,
     ]
     unsubs = [hass.bus.async_listen(e, _forward) for e in events]
 
@@ -418,3 +427,77 @@ async def websocket_upload_recipe_image(hass, connection, msg):
     await storage.update_recipe(msg["recipe_id"], update_data)
     hass.bus.async_fire(EVENT_RECIPE_UPDATED, {"recipe_id": recipe.id})
     connection.send_result(msg["id"], {"image_url": local_url, "local_url": local_url})
+
+
+# ===========================================================================
+# Global Timers
+# ===========================================================================
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/global_timers/get"})
+@websocket_api.async_response
+async def websocket_get_global_timers(hass, connection, msg):
+    """Return all global timers."""
+    storage = get_timer_storage(hass)
+    connection.send_result(msg["id"], {"timers": storage.get_timers()})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): f"{DOMAIN}/global_timers/add",
+    vol.Required("label"): str,
+    vol.Required("duration"): int,
+    vol.Required("start_time"): vol.Coerce(float),
+    vol.Optional("running", default=True): bool,
+    vol.Optional("paused_remaining"): vol.Any(int, None),
+    vol.Optional("preset_id"): vol.Any(str, None),
+})
+@websocket_api.async_response
+async def websocket_add_global_timer(hass, connection, msg):
+    """Create a new global timer."""
+    storage = get_timer_storage(hass)
+    data: Dict[str, Any] = {
+        "label": msg["label"],
+        "duration": msg["duration"],
+        "start_time": msg["start_time"],
+        "running": msg["running"],
+        "paused_remaining": msg.get("paused_remaining"),
+        "preset_id": msg.get("preset_id"),
+    }
+    timer = await storage.add_timer(data)
+    hass.bus.async_fire(EVENT_GLOBAL_TIMER_ADDED, timer)
+    connection.send_result(msg["id"], {"timer": timer})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): f"{DOMAIN}/global_timers/update",
+    vol.Required("timer_id"): str,
+    vol.Optional("running"): bool,
+    vol.Optional("start_time"): vol.Coerce(float),
+    vol.Optional("paused_remaining"): vol.Any(int, None),
+})
+@websocket_api.async_response
+async def websocket_update_global_timer(hass, connection, msg):
+    """Update the state of a global timer (pause/resume/add-time)."""
+    storage = get_timer_storage(hass)
+    updates = {k: msg[k] for k in ("running", "start_time", "paused_remaining") if k in msg}
+    timer = await storage.update_timer(msg["timer_id"], updates)
+    if timer is None:
+        connection.send_error(msg["id"], "not_found", f"Timer {msg['timer_id']} not found")
+        return
+    hass.bus.async_fire(EVENT_GLOBAL_TIMER_UPDATED, timer)
+    connection.send_result(msg["id"], {"timer": timer})
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): f"{DOMAIN}/global_timers/delete",
+    vol.Required("timer_id"): str,
+})
+@websocket_api.async_response
+async def websocket_delete_global_timer(hass, connection, msg):
+    """Delete a global timer."""
+    storage = get_timer_storage(hass)
+    deleted = await storage.delete_timer(msg["timer_id"])
+    if not deleted:
+        connection.send_error(msg["id"], "not_found", f"Timer {msg['timer_id']} not found")
+        return
+    hass.bus.async_fire(EVENT_GLOBAL_TIMER_DELETED, {"timer_id": msg["timer_id"]})
+    connection.send_result(msg["id"], {"deleted": True})

@@ -13,12 +13,16 @@ from .const import (
     EVENT_RECIPE_UPDATED,
     EVENT_RECIPE_DELETED,
     EVENT_MEAL_PLAN_UPDATED,
+    EVENT_GLOBAL_TIMER_ADDED,
+    EVENT_GLOBAL_TIMER_UPDATED,
+    EVENT_GLOBAL_TIMER_DELETED,
 )
-from .storage import RecipeStorage
+from .storage import RecipeStorage, GlobalTimerStorage
 
 _LOGGER = logging.getLogger(__name__)
 
 DATA_STORAGE = f"{DOMAIN}_storage"
+DATA_GLOBAL_TIMER_STORAGE = f"{DOMAIN}_global_timer_storage"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -32,8 +36,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     storage = RecipeStorage(hass)
     await storage.async_load()
 
+    timer_storage = GlobalTimerStorage(hass)
+    await timer_storage.async_load()
+
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][DATA_STORAGE] = storage
+    hass.data[DOMAIN][DATA_GLOBAL_TIMER_STORAGE] = timer_storage
 
     entry.async_on_unload(entry.add_update_listener(_update_listener))
 
@@ -44,7 +52,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     def _noop(event):
         pass
 
-    for evt in [EVENT_RECIPE_ADDED, EVENT_RECIPE_UPDATED, EVENT_RECIPE_DELETED, EVENT_MEAL_PLAN_UPDATED]:
+    for evt in [
+        EVENT_RECIPE_ADDED, EVENT_RECIPE_UPDATED, EVENT_RECIPE_DELETED, EVENT_MEAL_PLAN_UPDATED,
+        EVENT_GLOBAL_TIMER_ADDED, EVENT_GLOBAL_TIMER_UPDATED, EVENT_GLOBAL_TIMER_DELETED,
+    ]:
         hass.bus.async_listen(evt, _noop)
 
     _LOGGER.info("Recipe Manager setup complete")
@@ -87,6 +98,11 @@ async def _register_websocket_handlers(hass: HomeAssistant) -> None:
         # Import
         h.websocket_import_recipe_keeper,
         h.websocket_upload_recipe_image,
+        # Global Timers
+        h.websocket_get_global_timers,
+        h.websocket_add_global_timer,
+        h.websocket_update_global_timer,
+        h.websocket_delete_global_timer,
     ]
     for cmd in cmds:
         websocket_api.async_register_command(hass, cmd)
