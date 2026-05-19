@@ -39,9 +39,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     timer_storage = GlobalTimerStorage(hass)
     await timer_storage.async_load()
 
+    # Read installed version from manifest
+    import json as _json
+    import os as _os
+    _component_path = _os.path.dirname(__file__)
+    with open(_os.path.join(_component_path, "manifest.json")) as _f:
+        _manifest = _json.load(_f)
+
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][DATA_STORAGE] = storage
     hass.data[DOMAIN][DATA_GLOBAL_TIMER_STORAGE] = timer_storage
+    hass.data[DOMAIN]["version"] = _manifest.get("version", "unknown")
 
     entry.async_on_unload(entry.add_update_listener(_update_listener))
 
@@ -103,6 +111,7 @@ async def _register_websocket_handlers(hass: HomeAssistant) -> None:
         h.websocket_add_global_timer,
         h.websocket_update_global_timer,
         h.websocket_delete_global_timer,
+        h.websocket_get_info,
     ]
     for cmd in cmds:
         websocket_api.async_register_command(hass, cmd)

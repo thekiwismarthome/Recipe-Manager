@@ -501,3 +501,12 @@ async def websocket_delete_global_timer(hass, connection, msg):
         return
     hass.bus.async_fire(EVENT_GLOBAL_TIMER_DELETED, {"timer_id": msg["timer_id"]})
     connection.send_result(msg["id"], {"deleted": True})
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/get_info"})
+@callback
+def websocket_get_info(hass, connection, msg):
+    """Return integration version and basic info."""
+    connection.send_result(msg["id"], {
+        "version": hass.data[DOMAIN].get("version", "unknown"),
+    })
