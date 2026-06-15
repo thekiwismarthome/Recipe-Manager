@@ -510,3 +510,17 @@ def websocket_get_info(hass, connection, msg):
     connection.send_result(msg["id"], {
         "version": hass.data[DOMAIN].get("version", "unknown"),
     })
+
+
+@websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/backup"})
+@callback
+def websocket_backup(hass, connection, msg):
+    """Export all recipes and meal plan entries as a JSON backup."""
+    storage = get_storage(hass)
+    recipes = [r.to_dict() for r in storage.get_all_recipes()]
+    meal_plans = [e.to_dict() for e in storage.get_meal_plan_entries()]
+    connection.send_result(msg["id"], {
+        "version": 1,
+        "recipes": recipes,
+        "meal_plans": meal_plans,
+    })

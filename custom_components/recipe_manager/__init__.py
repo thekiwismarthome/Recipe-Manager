@@ -112,6 +112,7 @@ async def _register_websocket_handlers(hass: HomeAssistant) -> None:
         h.websocket_update_global_timer,
         h.websocket_delete_global_timer,
         h.websocket_get_info,
+        h.websocket_backup,
     ]
     for cmd in cmds:
         websocket_api.async_register_command(hass, cmd)
