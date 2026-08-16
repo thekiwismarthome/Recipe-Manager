@@ -58,6 +58,11 @@ conditions:
          != 'io.homeassistant.companion.android' }}
 
 actions:
+  # Remember what was on screen so we can report it, then relaunch.
+  - variables:
+      previous_app: "{{ state_attr('media_player.nspanel_pro_120', 'app_id') | default('unknown', true) }}"
+      when: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+
   # Launch the app via the Android "monkey" launcher intent. This brings the
   # app to the foreground if it is backgrounded, or cold-starts it if it was
   # killed.
@@ -67,3 +72,26 @@ actions:
     data:
       command: >-
         monkey -p io.homeassistant.companion.android -c android.intent.category.LAUNCHER 1
+
+  # --- Log to a file ---------------------------------------------------------
+  # Appends a timestamped line to the log file exposed by the "File" notify
+  # integration (see README.md → "File log" for the one-time setup that creates
+  # notify.nspanel_watchdog_log).
+  - action: notify.nspanel_watchdog_log
+    data:
+      message: >-
+        [{{ when }}] View Assist app was not running on NSPanel Pro 120
+        (foreground app was '{{ previous_app }}') — relaunched
+        io.homeassistant.companion.android
+
+  # --- Notify ----------------------------------------------------------------
+  # In-dashboard persistent notification (always available, no setup needed).
+  # To get a push notification instead/also, add a second action calling your
+  # mobile app service, e.g. notify.mobile_app_your_phone.
+  - action: persistent_notification.create
+    data:
+      title: "NSPanel Pro 120 — View Assist restarted"
+      notification_id: nspanel_view_assist_watchdog
+      message: >-
+        The View Assist app wasn't running (foreground app was
+        '{{ previous_app }}') and was relaunched at {{ when }}.
