@@ -1,0 +1,69 @@
+# =============================================================================
+# NSPanel Pro 120 — View Assist companion-app watchdog
+# =============================================================================
+# Purpose:
+#   Periodically check whether the Home Assistant Companion app (used by
+#   View Assist) is the app currently running in the foreground on a
+#   Sonoff NSPanel Pro 120. If it is NOT running (e.g. it crashed, was
+#   swiped away, or the launcher is showing), relaunch it via ADB.
+#
+# Requires:
+#   The "Android Debug Bridge" (androidtv) integration set up against the
+#   NSPanel Pro. See README.md in this folder for setup + prerequisites.
+#
+# Before use, find-and-replace the two placeholders throughout this file:
+#   * media_player.nspanel_pro_120        -> your ADB media_player entity id
+#   * io.homeassistant.companion.android  -> the app package you want kept alive
+#                                            (this is the default HA Companion
+#                                             / View Assist package)
+# =============================================================================
+
+alias: "NSPanel Pro 120 - Keep View Assist app running"
+description: >-
+  Watchdog that makes sure the View Assist / Home Assistant Companion app stays
+  in the foreground on the NSPanel Pro 120. On a schedule (and whenever the
+  screen wakes), it checks the current foreground app and relaunches the
+  companion app if something else is showing.
+mode: single
+
+triggers:
+  # 1) Watchdog poll — check every 2 minutes. Change "/2" to "/5" etc.
+  - trigger: time_pattern
+    minutes: "/2"
+  # 2) Also react immediately when the panel screen wakes up.
+  - trigger: state
+    entity_id: media_player.nspanel_pro_120
+    to: "on"
+
+conditions:
+  # Only act while the panel is awake — don't keep relaunching (and waking the
+  # screen) while it is asleep/off. Remove this block if you WANT it to force
+  # the app on even from standby.
+  - condition: not
+    conditions:
+      - condition: state
+        entity_id: media_player.nspanel_pro_120
+        state:
+          - "off"
+          - "standby"
+          - "unavailable"
+          - "unknown"
+
+  # And only when the companion app is NOT the current foreground app.
+  # The androidtv media_player exposes the running package as the "app_id"
+  # attribute (populated when the app is listed in the integration options).
+  - condition: template
+    value_template: >-
+      {{ state_attr('media_player.nspanel_pro_120', 'app_id')
+         != 'io.homeassistant.companion.android' }}
+
+actions:
+  # Launch the app via the Android "monkey" launcher intent. This brings the
+  # app to the foreground if it is backgrounded, or cold-starts it if it was
+  # killed.
+  - action: androidtv.adb_command
+    target:
+      entity_id: media_player.nspanel_pro_120
+    data:
+      command: >-
+        monkey -p io.homeassistant.companion.android -c android.intent.category.LAUNCHER 1
