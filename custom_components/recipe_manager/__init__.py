@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 
@@ -20,6 +21,8 @@ from .const import (
 from .storage import RecipeStorage, GlobalTimerStorage
 
 _LOGGER = logging.getLogger(__name__)
+
+PLATFORMS = [Platform.SENSOR]
 
 DATA_STORAGE = f"{DOMAIN}_storage"
 DATA_GLOBAL_TIMER_STORAGE = f"{DOMAIN}_global_timer_storage"
@@ -66,6 +69,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     ]:
         hass.bus.async_listen(evt, _noop)
 
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
     _LOGGER.info("Recipe Manager setup complete")
     return True
 
@@ -76,9 +81,10 @@ async def _update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.info("Unloading Recipe Manager")
-    if DOMAIN in hass.data:
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok and DOMAIN in hass.data:
         hass.data[DOMAIN].pop(DATA_STORAGE, None)
-    return True
+    return unload_ok
 
 
 async def _register_websocket_handlers(hass: HomeAssistant) -> None:
