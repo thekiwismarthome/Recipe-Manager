@@ -2,6 +2,8 @@
 
 A Home Assistant custom integration that gives you a full recipe management system — store, search, scrape, and meal-plan your recipes, all inside Home Assistant.
 
+**[Website, live demo and user manual](https://thekiwismarthome.github.io/Recipe-Manager/)**
+
 > **This is the backend integration.** To use it you also need the [Recipe Manager Card](https://github.com/thekiwismarthome/Recipe-Manager-Card) frontend, which is installed separately via HACS.
 
 ---

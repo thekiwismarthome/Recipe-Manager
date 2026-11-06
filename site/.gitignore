@@ -1,0 +1,9 @@
+node_modules
+.vitepress/cache
+.vitepress/dist
+# copied in by scripts/prepare-demo.mjs at build time
+public/sandbox/recipe-manager-card.js
+public/sandbox/chunks/
+public/sandbox/locales/
+public/sandbox/mdi/
+public/version.json

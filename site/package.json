@@ -1,0 +1,15 @@
+{
+  "name": "recipe-manager-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare-demo": "node scripts/prepare-demo.mjs",
+    "dev": "npm run prepare-demo && vitepress dev",
+    "build": "npm run prepare-demo && vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "@mdi/font": "^7.4.47",
+    "vitepress": "^1.6.3"
+  }
+}
