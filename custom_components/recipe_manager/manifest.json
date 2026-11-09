@@ -1,7 +1,7 @@
 {
   "domain": "recipe_manager",
   "name": "Recipe Manager",
-  "version": "2026.11.1-beta.3",
+  "version": "2026.11.1",
   "documentation": "https://github.com/thekiwismarthome/recipe-manager",
   "issue_tracker": "https://github.com/thekiwismarthome/recipe-manager/issues",
   "requirements": [

@@ -1,3 +1,13 @@
+# Recipe Manager 2026.11.1
+
+First release on calendar versioning (`YYYY.M.N`, the same as Shopping List Manager).
+
+- Bundles **Recipe Manager Card 2026.11.1**: Fresh and Compact interface styles, filter and sort sheet with star ratings, new Timers view with Voice PE / ESPHome timers, planner day view.
+- **Global timer sensors:** `sensor.recipe_manager_timers` (active count, full list as an attribute) and `sensor.recipe_manager_next_timer` (timestamp of the soonest running timer). They update on global timer events and at the next finish time.
+- **Website:** live demo and user manual (GitHub Pages).
+
+---
+
 # Release Notes — Recipe Manager v1.0.0
 
 First public release of the Recipe Manager Home Assistant integration.
