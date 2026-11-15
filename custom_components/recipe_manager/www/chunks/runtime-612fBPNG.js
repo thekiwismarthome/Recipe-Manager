@@ -25,23 +25,23 @@ const E=globalThis,S=t=>t,w=E.trustedTypes,b=w?w.createPolicy("lit-html",{create
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const at=(t,...e)=>({strTag:!0,strings:t,values:e}),lt=(t,e,s)=>{let i=t[0];for(let r=1;r<t.length;r++)i+=e[s?s[r-1]:r-1],i+=t[r];return i},ct=t=>{return"string"!=typeof(e=t)&&"strTag"in e?lt(t.strings,t.values):t;var e};
+const at="lit-localize-status",lt=(t,...e)=>({strTag:!0,strings:t,values:e}),ct=(t,e,s)=>{let i=t[0];for(let r=1;r<t.length;r++)i+=e[s?s[r-1]:r-1],i+=t[r];return i},dt=t=>{return"string"!=typeof(e=t)&&"strTag"in e?ct(t.strings,t.values):t;var e};
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */let dt=ct,pt=!1;
+ */let pt=dt,ut=!1;
 /**
  * @license
  * Copyright 2020 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-class ut{constructor(){this.settled=!1,this.promise=new Promise((t,e)=>{this._resolve=t,this._reject=e})}resolve(t){this.settled=!0,this._resolve(t)}reject(t){this.settled=!0,this._reject(t)}}
+class $t{constructor(){this.settled=!1,this.promise=new Promise((t,e)=>{this._resolve=t,this._reject=e})}resolve(t){this.settled=!0,this._resolve(t)}reject(t){this.settled=!0,this._reject(t)}}
 /**
  * @license
  * Copyright 2014 Travis Webb
  * SPDX-License-Identifier: MIT
- */const $t=[];for(let t=0;t<256;t++)$t[t]=(t>>4&15).toString(16)+(15&t).toString(16);function _t(t,e){return(e?"h":"s")+function(t){let e=0,s=8997,i=0,r=33826,n=0,o=40164,h=0,a=52210;for(let l=0;l<t.length;l++)s^=t.charCodeAt(l),e=435*s,i=435*r,n=435*o,h=435*a,n+=s<<8,h+=r<<8,i+=e>>>16,s=65535&e,n+=i>>>16,r=65535&i,a=h+(n>>>16)&65535,o=65535&n;return $t[a>>8]+$t[255&a]+$t[o>>8]+$t[255&o]+$t[r>>8]+$t[255&r]+$t[s>>8]+$t[255&s]}
+ */const _t=[];for(let t=0;t<256;t++)_t[t]=(t>>4&15).toString(16)+(15&t).toString(16);function ft(t,e){return(e?"h":"s")+function(t){let e=0,s=8997,i=0,r=33826,n=0,o=40164,h=0,a=52210;for(let l=0;l<t.length;l++)s^=t.charCodeAt(l),e=435*s,i=435*r,n=435*o,h=435*a,n+=s<<8,h+=r<<8,i+=e>>>16,s=65535&e,n+=i>>>16,r=65535&i,a=h+(n>>>16)&65535,o=65535&n;return _t[a>>8]+_t[255&a]+_t[o>>8]+_t[255&o]+_t[r>>8]+_t[255&r]+_t[s>>8]+_t[255&s]}
 /**
  * @license
  * Copyright 2020 Google LLC
@@ -51,9 +51,9 @@ class ut{constructor(){this.settled=!1,this.promise=new Promise((t,e)=>{this._re
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const ft=new WeakMap,gt=new Map;function At(t,e,s){if(t){const i=s?.id??function(t){const e="string"==typeof t?t:t.strings;let s=gt.get(e);void 0===s&&(s=_t(e,"string"!=typeof t&&!("strTag"in t)),gt.set(e,s));return s}
+ */const gt=new WeakMap,At=new Map;function mt(t,e,s){if(t){const i=s?.id??function(t){const e="string"==typeof t?t:t.strings;let s=At.get(e);void 0===s&&(s=ft(e,"string"!=typeof t&&!("strTag"in t)),At.set(e,s));return s}
 /**
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */(e),r=t[i];if(r){if("string"==typeof r)return r;if("strTag"in r)return lt(r.strings,e.values,r.values);{let t=ft.get(r);return void 0===t&&(t=r.values,ft.set(r,t)),{...r,values:t.map(t=>e.values[t])}}}}return ct(e)}function mt(t){window.dispatchEvent(new CustomEvent("lit-localize-status",{detail:t}))}let yt,vt,Et,St,wt,bt="",Ct=new ut;Ct.resolve();let Pt=0;const xt=t=>(function(t){if(pt)throw new Error("lit-localize can only be configured once");dt=t,pt=!0}((t,e)=>At(wt,t,e)),bt=vt=t.sourceLocale,Et=new Set(t.targetLocales),Et.add(t.sourceLocale),St=t.loadLocale,{getLocale:Ut,setLocale:Ot}),Ut=()=>bt,Ot=t=>{if(t===(yt??bt))return Ct.promise;if(!Et||!St)throw new Error("Internal error");if(!Et.has(t))throw new Error("Invalid locale code");Pt++;const e=Pt;yt=t,Ct.settled&&(Ct=new ut),mt({status:"loading",loadingLocale:t});return(t===vt?Promise.resolve({templates:void 0}):St(t)).then(s=>{Pt===e&&(bt=t,yt=void 0,wt=s.templates,mt({status:"ready",readyLocale:t}),Ct.resolve())},s=>{Pt===e&&(mt({status:"error",errorLocale:t,errorMessage:s.toString()}),Ct.reject(s))}),Ct.promise};export{V as A,W as E,n as a,B as b,xt as c,ot as i,dt as m,at as s};
+ */(e),r=t[i];if(r){if("string"==typeof r)return r;if("strTag"in r)return ct(r.strings,e.values,r.values);{let t=gt.get(r);return void 0===t&&(t=r.values,gt.set(r,t)),{...r,values:t.map(t=>e.values[t])}}}}return dt(e)}function yt(t){window.dispatchEvent(new CustomEvent(at,{detail:t}))}let vt,Et,St,wt,bt,Ct="",Pt=new $t;Pt.resolve();let xt=0;const Ut=t=>(function(t){if(ut)throw new Error("lit-localize can only be configured once");pt=t,ut=!0}((t,e)=>mt(bt,t,e)),Ct=Et=t.sourceLocale,St=new Set(t.targetLocales),St.add(t.sourceLocale),wt=t.loadLocale,{getLocale:Ot,setLocale:Tt}),Ot=()=>Ct,Tt=t=>{if(t===(vt??Ct))return Pt.promise;if(!St||!wt)throw new Error("Internal error");if(!St.has(t))throw new Error("Invalid locale code");xt++;const e=xt;vt=t,Pt.settled&&(Pt=new $t),yt({status:"loading",loadingLocale:t});return(t===Et?Promise.resolve({templates:void 0}):wt(t)).then(s=>{xt===e&&(Ct=t,vt=void 0,bt=s.templates,yt({status:"ready",readyLocale:t}),Pt.resolve())},s=>{xt===e&&(yt({status:"error",errorLocale:t,errorMessage:s.toString()}),Pt.reject(s))}),Pt.promise};export{V as A,W as E,at as L,n as a,B as b,Ut as c,ot as i,pt as m,lt as s};

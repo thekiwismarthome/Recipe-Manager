@@ -282,25 +282,82 @@ def _extract_from_jsonld_node(node: Dict[str, Any], url: str) -> Dict[str, Any]:
 # Parsing utilities
 # ---------------------------------------------------------------------------
 
+# German ingredient units (EL = Esslöffel, TL = Teelöffel, Prise, Bund, Pck. ...) so recipes from
+# German sites split into amount / unit / name instead of leaving "EL" inside the name.
+_DE_UNIT_CANON: Dict[str, str] = {
+    "el": "EL", "esslöffel": "EL", "essloeffel": "EL",
+    "tl": "TL", "teelöffel": "TL", "teeloeffel": "TL",
+    "msp": "Msp.", "messerspitze": "Msp.", "messerspitzen": "Msp.",
+    "prise": "Prise", "prisen": "Prise",
+    "bund": "Bund", "bd": "Bund",
+    "pck": "Pck.", "pkg": "Pck.", "pkt": "Pck.", "päckchen": "Pck.", "paeckchen": "Pck.",
+    "packung": "Pck.", "packungen": "Pck.",
+    "dose": "Dose", "dosen": "Dose",
+    "zehe": "Zehe", "zehen": "Zehe",
+    "stück": "Stück", "stueck": "Stück", "stk": "Stück", "stck": "Stück",
+    "scheibe": "Scheibe", "scheiben": "Scheibe",
+    "blatt": "Blatt", "blätter": "Blatt",
+    "stange": "Stange", "stangen": "Stange",
+    "zweig": "Zweig", "zweige": "Zweig",
+    "kopf": "Kopf", "köpfe": "Kopf",
+    "handvoll": "Handvoll",
+    "tasse": "Tasse", "tassen": "Tasse",
+    "becher": "Becher", "glas": "Glas", "gläser": "Glas",
+    "tüte": "Tüte", "tüten": "Tüte",
+    "liter": "l", "dl": "dl", "cl": "cl",
+    "würfel": "Würfel",
+    "stängel": "Stängel", "staengel": "Stängel", "stiel": "Stiel", "stiele": "Stiel",
+    "schuss": "Schuss", "spritzer": "Spritzer",
+}
+
+# Unit words accepted by the ingredient parser (English + German).
+_UNIT_WORDS = (
+    r"tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lbs?|g|kg|mg|ml|mL|L|dl|cl|litre?s?|liters?|"
+    r"pint|quart|gallon|fl\.?\s*oz|can|cans|bunch|head|clove|cloves|slice|slices|"
+    r"piece|pieces|sheet|sheets|pinch|dash|handful|sprig|sprigs|stalk|stalks|"
+    # German
+    r"EL|TL|Msp|Messerspitzen?|Prisen?|Bund|Bd|Pck|Pkg|Pkt|Päckchen|Packungen?|Dosen?|Zehen?|"
+    r"St(?:ü|ue)ck|Stk|Stck|Scheiben?|Bl(?:ä|ae)tter|Blatt|Stangen?|Zweige?|K(?:ö|oe)pfe|Kopf|"
+    r"Handvoll|Tassen?|Becher|Gl(?:ä|ae)ser|Glas|T(?:ü|ue)ten?|Esslöffel|Teelöffel|Würfel|Liter|"
+    r"St(?:ä|ae)ngel|Stiele?|Schuss|Spritzer"
+)
+
+_UNICODE_FRACTIONS = {
+    "½": " 1/2", "¼": " 1/4", "¾": " 3/4", "⅓": " 1/3", "⅔": " 2/3",
+    "⅛": " 1/8", "⅜": " 3/8", "⅝": " 5/8", "⅞": " 7/8",
+}
+
+
 def _parse_ingredient_string(raw: str) -> Dict[str, Any]:
     """Try to split an ingredient string into amount / unit / name.
 
     Returns a dict suitable for Ingredient.from_dict().
     E.g. "2 cups plain flour, sifted"  →  {amount:"2", unit:"cups", name:"plain flour", notes:"sifted"}
+    German units work too: "2 EL Olivenöl" → {amount:"2", unit:"EL", name:"Olivenöl"}.
     """
     if not raw or not isinstance(raw, str):
         return {"name": str(raw or ""), "amount": None, "unit": None, "notes": None}
 
     raw = raw.strip()
+    for glyph, frac in _UNICODE_FRACTIONS.items():
+        raw = raw.replace(glyph, frac)
+    raw = re.sub(r"\s+", " ", raw).strip()
 
-    # Pattern: optional number (incl fractions) + optional unit + rest
+    # "ca. 200 g Butter" / "etwa 2 EL Öl": parse the rest and keep the hint as a note
+    approx = None
+    am = re.match(r"^(ca\.?|circa|etwa|ungefähr|approx\.?|about)\s+(?=\d)", raw, re.IGNORECASE)
+    if am:
+        word = am.group(1).lower().rstrip(".")
+        approx = "ca." if word == "ca" else word
+        raw = raw[am.end():]
+
+    # Pattern: optional number (incl fractions) + optional unit + rest.
+    # The unit must be a whole word, otherwise "Gurke" would become unit "G" + name "urke".
     pattern = re.compile(
         r"^"
         r"(?P<amount>\d+(?:[.,/]\d+)?(?:\s*-\s*\d+(?:[.,/]\d+)?)?\s*(?:\d+/\d+)?)?"
         r"\s*"
-        r"(?:(?P<unit>tsp|tbsp|tablespoons?|teaspoons?|cups?|oz|lb|lbs?|g|kg|ml|mL|L|litre?s?|"
-        r"pint|quart|gallon|fl\.?\s*oz|can|cans|bunch|head|clove|cloves|slice|slices|"
-        r"piece|pieces|sheet|sheets|pinch|dash|handful|sprig|sprigs|stalk|stalks)\.?)?"
+        r"(?:(?P<unit>" + _UNIT_WORDS + r")(?=[\s.,;:]|$)\.?)?"
         r"\s*"
         r"(?P<name>.+?)$",
         re.IGNORECASE,
@@ -313,6 +370,17 @@ def _parse_ingredient_string(raw: str) -> Dict[str, Any]:
     unit = (m.group("unit") or "").strip() or None
     rest = (m.group("name") or "").strip()
 
+    # A unit without an amount is part of the name ("Liter Wasser" is rare; "Dosen" alone is a word)
+    if unit and not amount:
+        rest = f"{unit} {rest}".strip()
+        unit = None
+
+    if amount:
+        # German decimal comma: "1,5" -> "1.5" (fractions like 1/2 are left alone)
+        amount = re.sub(r"(?<=\d),(?=\d)", ".", amount)
+    if unit:
+        unit = _DE_UNIT_CANON.get(unit.lower().rstrip("."), unit)
+
     # Split notes after comma
     name = rest
     notes = None
@@ -321,6 +389,8 @@ def _parse_ingredient_string(raw: str) -> Dict[str, Any]:
         name = parts[0].strip()
         notes = parts[1].strip()
 
+    if approx:
+        notes = (f"{approx} {notes}" if approx == "ca." else f"{approx}, {notes}") if notes else approx
     return {"name": name, "amount": amount, "unit": unit, "notes": notes}
 
 
