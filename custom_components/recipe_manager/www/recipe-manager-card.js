@@ -159,9 +159,10 @@ import{L as e,c as t,i,m as r,s as a,b as s,a as n,A as o,E as c}from"./chunks/r
                 placeholder="${r("Search recipes…")}"
                 .value=${this.searchQuery}
                 @input=${this._handleSearchInput}
+                @keydown=${e=>{"Escape"===e.key&&this.searchQuery&&this._handleClearSearch()}}
               />
               ${this.searchQuery?s`
-                <button class="clear-btn" @click=${this._handleClearSearch}>
+                <button class="clear-btn" title="${r("Clear search")}" aria-label="${r("Clear search")}" @click=${this._handleClearSearch}>
                   <ha-icon icon="mdi:close"></ha-icon>
                 </button>
               `:""}
@@ -3918,7 +3919,14 @@ https://github.com/nodeca/pako/blob/main/LICENSE
               placeholder="${r("Search recipes…")}"
               .value=${this._pickerSearch}
               @input=${e=>{this._pickerSearch=e.target.value}}
+              @keydown=${e=>{"Escape"===e.key&&this._pickerSearch&&(e.stopPropagation(),this._pickerSearch="")}}
             />
+            ${this._pickerSearch?s`
+              <button class="picker-search-clear" title="${r("Clear search")}" aria-label="${r("Clear search")}"
+                @click=${()=>{this._pickerSearch=""}}>
+                <ha-icon icon="mdi:close"></ha-icon>
+              </button>
+            `:""}
           </div>
           <div class="picker-list">
             ${0===this._pickerFiltered.length?s`
@@ -4391,7 +4399,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     .slot-btn ha-icon { --mdc-icon-size: 20px; }
     .slot-btn.add span { width: 36px; height: 36px; border-radius: 50%; background: var(--rm-accent-soft); color: var(--rm-accent-text); display: flex; align-items: center; justify-content: center; }
     .slot-btn.add ha-icon { --mdc-icon-size: 18px; }
-  `}try{customElements.define("rm-meal-planner",oe)}catch{}const ce="2026.11.2",le=[["en","English"],["es","Español"],["fr","Français"],["de","Deutsch"],["pt","Português"],["nl","Nederlands"],["it","Italiano"]];class de extends i{static properties={uiStyle:{type:String,attribute:"ui-style",reflect:!0},hass:{type:Object},settings:{type:Object},_activeTab:{type:String},_rmVersion:{type:String},_rmcVersion:{type:String},_backupState:{type:String}};constructor(){super(),d(this),this.settings={},this._activeTab="appearance",this._rmVersion="…",this._rmcVersion="…",this._backupState=null}updated(e){e.has("hass")&&this.hass&&"…"===this._rmVersion&&this._fetchVersionsFromHacs()}async _backup(){if("loading"!==this._backupState){this._backupState="loading";try{const e=await this.hass.callWS({type:"recipe_manager/backup"}),t=JSON.stringify(e,null,2),i=new Blob([t],{type:"application/json"}),r=URL.createObjectURL(i),a=document.createElement("a");a.href=r,a.download=`recipe-manager-backup-${(new Date).toISOString().slice(0,10)}.json`,a.click(),URL.revokeObjectURL(r),this._backupState="done"}catch(e){console.error("[RM] Backup failed:",e),this._backupState="error"}setTimeout(()=>{this._backupState=null},3e3)}}_fetchVersionsFromHacs(){this.hass&&(this._rmVersion="…",this._rmcVersion="…",this.hass.callWS({type:"hacs/repositories/list"}).then(e=>{const t=e.find(e=>"thekiwismarthome/recipe-manager"===e.full_name.toLowerCase()),i=e.find(e=>"thekiwismarthome/recipe-manager-card"===e.full_name.toLowerCase());this._rmVersion=t?.installed_version??"—",this._rmcVersion=i?.installed_version??ce}).catch(()=>{this._rmVersion="—",this._rmcVersion=ce}))}get _darkNow(){const e=this.settings?.darkMode;if("on"===e)return!0;if("off"===e)return!1;const t=this.hass?.themes?.darkMode;return"boolean"==typeof t?t:"function"==typeof matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches}_themeName(e){return{meadow:r("Meadow"),slate:r("Slate"),sunset:r("Sunset")}[e]??e}_tile(e,t=1){return s`<span class="tile" style="--hue: var(--rm-h${t}, var(--rm-accent))"><ha-icon icon="${e}"></ha-icon></span>`}_update(e){const t={...this.settings,...e};this.dispatchEvent(new CustomEvent("rm-settings-change",{detail:{settings:t},bubbles:!0,composed:!0}))}render(){const e=this.settings;return s`
+
+    .picker-search { min-width: 0; }
+    .picker-search-clear {
+      flex: none; width: 32px; height: 32px; padding: 0; border: none; border-radius: 50%; cursor: pointer;
+      background: var(--rm-bg-elevated, rgba(128,128,128,0.15)); color: var(--rm-text, inherit);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .picker-search-clear:hover { background: var(--rm-accent-soft); color: var(--rm-accent-text, var(--rm-accent)); }
+    .picker-search-clear:focus-visible { outline: 2px solid var(--rm-accent); outline-offset: 2px; }
+    .picker-search-clear ha-icon { --mdc-icon-size: 16px; }
+  `}try{customElements.define("rm-meal-planner",oe)}catch{}const ce="2026.11.3",le=[["en","English"],["es","Español"],["fr","Français"],["de","Deutsch"],["pt","Português"],["nl","Nederlands"],["it","Italiano"]];class de extends i{static properties={uiStyle:{type:String,attribute:"ui-style",reflect:!0},hass:{type:Object},settings:{type:Object},_activeTab:{type:String},_rmVersion:{type:String},_rmcVersion:{type:String},_backupState:{type:String}};constructor(){super(),d(this),this.settings={},this._activeTab="appearance",this._rmVersion="…",this._rmcVersion="…",this._backupState=null}updated(e){e.has("hass")&&this.hass&&"…"===this._rmVersion&&this._fetchVersionsFromHacs()}async _backup(){if("loading"!==this._backupState){this._backupState="loading";try{const e=await this.hass.callWS({type:"recipe_manager/backup"}),t=JSON.stringify(e,null,2),i=new Blob([t],{type:"application/json"}),r=URL.createObjectURL(i),a=document.createElement("a");a.href=r,a.download=`recipe-manager-backup-${(new Date).toISOString().slice(0,10)}.json`,a.click(),URL.revokeObjectURL(r),this._backupState="done"}catch(e){console.error("[RM] Backup failed:",e),this._backupState="error"}setTimeout(()=>{this._backupState=null},3e3)}}_fetchVersionsFromHacs(){this.hass&&(this._rmVersion="…",this._rmcVersion="…",this.hass.callWS({type:"hacs/repositories/list"}).then(e=>{const t=e.find(e=>"thekiwismarthome/recipe-manager"===e.full_name.toLowerCase()),i=e.find(e=>"thekiwismarthome/recipe-manager-card"===e.full_name.toLowerCase());this._rmVersion=t?.installed_version??"—",this._rmcVersion=i?.installed_version??ce}).catch(()=>{this._rmVersion="—",this._rmcVersion=ce}))}get _darkNow(){const e=this.settings?.darkMode;if("on"===e)return!0;if("off"===e)return!1;const t=this.hass?.themes?.darkMode;return"boolean"==typeof t?t:"function"==typeof matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches}_themeName(e){return{meadow:r("Meadow"),slate:r("Slate"),sunset:r("Sunset")}[e]??e}_tile(e,t=1){return s`<span class="tile" style="--hue: var(--rm-h${t}, var(--rm-accent))"><ha-icon icon="${e}"></ha-icon></span>`}_update(e){const t={...this.settings,...e};this.dispatchEvent(new CustomEvent("rm-settings-change",{detail:{settings:t},bubbles:!0,composed:!0}))}render(){const e=this.settings;return s`
       <div class="settings-root">
         <div class="tab-bar">
           ${[["appearance","mdi:palette-outline",r("Appearance")],["advanced","mdi:tune-variant",r("Advanced")],["sync","mdi:cloud-sync-outline",r("Sync")],["help","mdi:help-circle-outline",r("Help")]].map(([e,t,i])=>s`
@@ -5350,9 +5368,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 placeholder="${r("Search…")}"
                 .value=${this._searchQuery}
                 @input=${e=>{this._searchQuery=e.target.value,this._navDirection="back",this._view="grid"}}
+                @keydown=${e=>{"Escape"===e.key&&(this._searchQuery="")}}
               />
               ${this._searchQuery?s`
-                <button class="sb-search-clear" @click=${()=>{this._searchQuery=""}}>
+                <button class="sb-search-clear" title="${r("Clear search")}" aria-label="${r("Clear search")}"
+                  @click=${()=>{this._searchQuery=""}}>
                   <ha-icon icon="mdi:close"></ha-icon>
                 </button>
               `:""}
@@ -5977,15 +5997,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     .sb-search-icon { --mdc-icon-size: 16px; color: var(--rm-text-muted); flex-shrink: 0; }
     .sb-search-input {
-      flex: 1; background: none; border: none; outline: none;
+      flex: 1; min-width: 0; width: 100%; background: none; border: none; outline: none;
       color: var(--rm-text); font-size: 13px; padding: 7px 0;
     }
     .sb-search-input::placeholder { color: var(--rm-text-muted); }
     .sb-search-clear {
-      background: none; border: none; cursor: pointer;
-      color: var(--rm-text-muted); padding: 2px; display: flex; align-items: center;
+      flex: none; width: 28px; height: 28px; margin-right: -6px;
+      background: var(--rm-bg-elevated, rgba(128,128,128,0.15)); border: none; border-radius: 50%; cursor: pointer;
+      color: var(--rm-text); padding: 0; display: flex; align-items: center; justify-content: center;
     }
-    .sb-search-clear ha-icon { --mdc-icon-size: 14px; }
+    .sb-search-clear:hover { background: var(--rm-accent-soft); color: var(--rm-accent-text, var(--rm-accent)); }
+    .sb-search-clear ha-icon { --mdc-icon-size: 16px; }
 
     .sb-new-btn {
       display: flex; align-items: center; gap: 8px;

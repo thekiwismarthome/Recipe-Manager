@@ -1,3 +1,9 @@
+# Recipe Manager 2026.11.3 — Clear search everywhere
+
+- Bundles **Recipe Manager Card 2026.11.3**: a clear (X) button and the Escape key on every recipe search, including the meal planner's recipe picker, and the sidebar X that was hidden on the wide layout.
+
+---
+
 # Recipe Manager 2026.11.2 — German recipes
 
 - **German ingredient units:** recipes imported from German sites now split into amount, unit and name: "2 EL Olivenöl", "1 Prise Salz", "1,5 TL Zimt", "1 Pck. Vanillezucker", "2 Zehen Knoblauch", "1 Dose Tomaten" and "ca. 200 g Butter". EL, TL, Prise, Bund, Pck., Zehe, Stück, Dose, Stängel and more are understood, along with decimal commas and ½ style fractions.
